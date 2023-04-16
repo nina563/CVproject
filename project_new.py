@@ -158,11 +158,8 @@ def line_fit_ransac(img, line):
 def intersection_points_detect(line_1_parameter, line_2_parameter):
     slope1, intercept1 = line_1_parameter
     slope2, intercept2 = line_2_parameter
-    # Solve for the x and y values where the two lines intersect
     x_intersect = (intercept2 - intercept1) / (slope1 - slope2)
     y_intersect = slope1 * x_intersect + intercept1
-    # Print the intersection point
-    # print("Vanishing point: ({}, {})".format(x_intersect, y_intersect))
     points =(x_intersect, y_intersect)
     return points
 
@@ -187,7 +184,6 @@ def distance(point1, point2):# Calculates the distance between two points in a 2
 def focal_length_calc(vp_u,vp_v,p, p_uv):
     OcVi_len = math.sqrt(distance(vp_v, p_uv ) * distance(p_uv ,vp_u))
     focal_length =math.sqrt( pow(OcVi_len, 2) -pow(distance(p, p_uv), 2))
-    # print("focal_length",focal_length)
     return focal_length
 
 def principal_point_coordinates(img):
@@ -210,7 +206,6 @@ def intrinsic_parameters(img, vp_u, vp_v):
     ap = p_point - vp_v
     ab = vp_u - vp_v
     p_uv= vp_v + np.dot(ap, ab) / np.dot(ab, ab) * ab
-    # print("p_uv",p_uv)
     f=focal_length_calc(vp_u,vp_v,p, p_uv) # focal length
     K =np.array([[scale_factor_u*f , skew,            u0],
                 [0,                scale_factor_v*f, v0],
@@ -233,12 +228,7 @@ def rotation(vp_u, vp_v, f):
 
     # rotation from world to camera
     rotation = np.hstack((u_rc, v_rc, w_rc))
-    # print("rotation", rotation)
     return rotation
-
-# point1 and point2 are coordinates of the side of the pattern in world coordinates
-#  we are setting point P in the real world  = length of 4 squares of the pattern
-# look for the p' point in the image (p_im)- find as 5th point on the first horizontal line
 
 
 def construct_plane(p1, p2, p3):
@@ -391,6 +381,8 @@ if __name__ == "__main__":
     pattern_size = (8, 5)
     square_size_big = 125
     img, all_corners = pattern_corner_detect(pattern_size)
+
+    #all vertical and horizontal lines
     horizontal_lines, vertical_lines = all_lines_detect(img, pattern_size, all_corners)
     perimeter_lines = parimeter_lines_detect(img, pattern_size, all_corners)
 
@@ -401,9 +393,10 @@ if __name__ == "__main__":
     vp_u= intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[1])
     #vertical intersection point
     vp_v= intersection_points_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
-    A_point_rc = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
-    D_point_rc = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
 
+
+
+    #get an array of intersecting all the horizontal lines among each other
     horizontal_vp = find_array_of_intersecting_points(horizontal_lines_parameters)
     vertical_vp = find_array_of_intersecting_points(vertical_lines_parameters)
     fig = plt.figure()
@@ -418,9 +411,9 @@ if __name__ == "__main__":
     for x,y in all_corners:
         ax.scatter([x], [y],  color='b', marker='o')
     combinations_vp = combinations(horizontal_vp,vertical_vp)
-    print("horizontal_vp", len(horizontal_vp))
-    print("ver_vp", len(vertical_vp))
-    print(len(combinations_vp))
+
+
+
     min = float('inf')
     for i in combinations_vp:
         vp_u , vp_v = i
@@ -428,15 +421,14 @@ if __name__ == "__main__":
         rotation_matrix = rotation(vp_u, vp_v, f)
 ##perimeter_lines ---- first_horizontal, second_horizontal, first_vertical, second_vertical------([slop, intercept],...)
 # i want to add point vp_u to the first_horizontal, second_horizontal, and vpv to first_vertical, second_vertical
-# i do that to fit the lines to
         np.append(perimeter_lines[0], vp_u)
         np.append(perimeter_lines[1], vp_u)
         np.append(perimeter_lines[2], vp_v)
         np.append(perimeter_lines[3], vp_v)
         fitted_lines_parameters = [line_fit_ransac(img, line) for line in perimeter_lines]
-        A_point_rc = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
-        D_point_rc = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
-        dist = translation(vp_u, f, img, rotation_matrix, all_corners, square_size_big, pattern_size, A_point_rc, D_point_rc  )
+        A_point_im = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
+        D_point_im = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
+        dist = translation(vp_u, f, img, rotation_matrix, all_corners, square_size_big, pattern_size, A_point_im, D_point_im  )
         if dist <min:
             min = dist
     print(min)
