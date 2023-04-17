@@ -6,6 +6,8 @@ import math
 import matplotlib.pyplot as plt
 from sklearn.linear_model import RANSACRegressor
 import itertools
+from sympy import Point3D, Line3D, Segment3D
+import sympy as sp
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 
@@ -155,7 +157,7 @@ def line_fit_ransac(img, line):
     return parameters
 
 
-def intersection_points_detect(line_1_parameter, line_2_parameter):
+def intersection_2Dpoints_detect(line_1_parameter, line_2_parameter):
     slope1, intercept1 = line_1_parameter
     slope2, intercept2 = line_2_parameter
     x_intersect = (intercept2 - intercept1) / (slope1 - slope2)
@@ -163,12 +165,12 @@ def intersection_points_detect(line_1_parameter, line_2_parameter):
     points =(x_intersect, y_intersect)
     return points
 
-def find_array_of_intersecting_points(lines):
+def find_array_of_intersecting_2Dpoints(lines):
     # Find all the intersection points among the lines
     intersections = []
     for i, line1 in enumerate(lines):
         for line2 in lines[i + 1:]:
-            intersection = intersection_points_detect(line1, line2)
+            intersection = intersection_2Dpoints_detect(line1, line2)
             if intersection is not None:
                 intersections.append(intersection)
     return intersections
@@ -291,7 +293,7 @@ def translation(vp_u, f, img, r, all_corners, square_size, pattern_size, A_point
     # print("normal unit", plane_norm_unit)
     # print("p_intersection_KO", p_intersection_KO)
 
-    dist = intersection_lines(a_rc, AK_rc , o_rc, k_rc)
+    dist = intersection_3Dpoints_detect(a_rc, AK_rc , o_rc, k_rc)
     # Find the dot product between the vector and normal vector of the plane
     dot_prod = np.dot((AK_rc), plane_norm_unit)
     # Calculate the magnitudes of the vector and normal vector of the plane
@@ -336,35 +338,31 @@ def project_onto_plane(v, normal,o):
     projection = v - signed_distance / np.dot(normal, normal) * normal
     return projection
 
-def intersection_lines(a_rc, p_new, o_rc, k_rc):
-    intersection = None
-    # Define the two 3D lines
-    # Line 1: x = 1 + t, y = 2 + 2t, z = 3 + 3t
-    # Line 2: x = 2 + s, y = 1 + s, z = 4 + 2s
-    p1 = np.array(p_new)
-    d1 = np.array(a_rc-p_new)
-    p2 = np.array(k_rc)
-    d2 = np.array(o_rc-k_rc)
+def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
 
+    p1 = np.array(a_rc)
+    AP_rc = np.array(p_new-a_rc) #d1
+    p2 = np.array(o_rc)
+    OK_rc = np.array(k_rc-o_rc) #d2
     # Find the vector connecting the two points
     v = p1 - p2
 
     # Find the normal vector of the plane
-    n = np.cross(d1, d2)
-    # print("cross product", np.cross(p1,p2))
-    # print("norm of d1 d2 ",n /np.linalg.norm(n))
+    n = np.cross(AP_rc, OK_rc)
+    print("cross product AP_rc, OK_rc", n)
+
     # Find the distance between the two lines
     dist = np.dot(n,-v) / np.linalg.norm(n)
     # print(f"dist {dist}")
-    # # If the distance is zero, the two lines intersect
-    # if dist == 0:
-    #     # Find the parameter t for Line 1
-    #     t = np.dot(v, np.cross(p2 - p1, d2)) / np.linalg.norm(np.cross(d1, d2)) ** 2
-    #     # Find the point of intersection
-    #     intersection = p1 + t * d1
-    #     print("The two lines intersect at point", intersection)
-    # else:
-    #     print("The two lines do not intersect.")
+    AP_rc = Line3D(Point3D(a_rc), Point3D(p_new))
+    OK_rc = Line3D(Point3D(o_rc), Point3D(k_rc))
+    # If the distance is zero, the two lines intersect
+    if dist == 0:
+        intersection_point = AP_rc.intersection(OK_rc)
+        print("The two lines intersect at point", intersection_point)
+
+    else:
+        print("The two lines do not intersect.")
     return dist
 
 
@@ -390,31 +388,36 @@ if __name__ == "__main__":
     horizontal_lines_parameters =[line_fit_ransac(img,line) for line in horizontal_lines]
     vertical_lines_parameters = [line_fit_ransac(img, line) for line in vertical_lines]
     #horizontal intersection point
-    vp_u= intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[1])
+    vp_u= intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[1])
     #vertical intersection point
-    vp_v= intersection_points_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
+    vp_v= intersection_2Dpoints_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
 
 
 
     #get an array of intersecting all the horizontal lines among each other
-    horizontal_vp = find_array_of_intersecting_points(horizontal_lines_parameters)
-    vertical_vp = find_array_of_intersecting_points(vertical_lines_parameters)
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    for x,y in horizontal_vp:
-        ax.scatter([x], [y],  color='b', marker='o')
-    for x,y in vertical_vp:
-        ax.scatter([x], [y],  color='b', marker='o')
-    ax.scatter(vp_u[0], vp_u[1], color='g', marker='o')
-    ax.scatter(vp_v[0], vp_v[1], color='g', marker='o')
+    horizontal_vp = find_array_of_intersecting_2Dpoints(horizontal_lines_parameters)
+    vertical_vp = find_array_of_intersecting_2Dpoints(vertical_lines_parameters)
 
-    for x,y in all_corners:
-        ax.scatter([x], [y],  color='b', marker='o')
+    #VIZUALISATION
+
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
+    # for x,y in horizontal_vp:
+    #     ax.scatter([x], [y],  color='b', marker='o')
+    # for x,y in vertical_vp:
+    #     ax.scatter([x], [y],  color='b', marker='o')
+    # ax.scatter(vp_u[0], vp_u[1], color='g', marker='o')
+    # ax.scatter(vp_v[0], vp_v[1], color='g', marker='o')
+    #
+    # for x,y in all_corners:
+    #     ax.scatter([x], [y],  color='b', marker='o')
+
     combinations_vp = combinations(horizontal_vp,vertical_vp)
 
 
 
     min = float('inf')
+    count = 0
     for i in combinations_vp:
         vp_u , vp_v = i
         f, K = intrinsic_parameters(img, vp_u, vp_v)
@@ -426,10 +429,13 @@ if __name__ == "__main__":
         np.append(perimeter_lines[2], vp_v)
         np.append(perimeter_lines[3], vp_v)
         fitted_lines_parameters = [line_fit_ransac(img, line) for line in perimeter_lines]
-        A_point_im = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
-        D_point_im = intersection_points_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
+        A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
+        D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
         dist = translation(vp_u, f, img, rotation_matrix, all_corners, square_size_big, pattern_size, A_point_im, D_point_im  )
         if dist <min:
             min = dist
+        if count == 0 :
+            break
+        count+=1
     print(min)
     plt.show(block=True)
