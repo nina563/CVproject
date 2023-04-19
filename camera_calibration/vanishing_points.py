@@ -208,7 +208,9 @@ def translation(vp_u, f, principal_point, square_size, A_point, D_point):
     a_rc = np.array([*(A_point - principal_point), f])
     vp_u_3d = np.array([*vp_u, f])
 
+    # Find a point in the right direction first, and the actual intersection point after.
     Kp_rc = (k_rc - a_rc).dot(vp_u_3d)/np.linalg.norm(vp_u_3d) * vp_u_3d / np.linalg.norm(vp_u_3d) + a_rc
+    Kp_rc = intersection_3Dpoints_detect(a_rc, Kp_rc, [0, 0, 0], k_rc)
 
     AK_ro = square_size * K_pos  # note this is in mm
     OA_ro = norm(a_rc) / norm(Kp_rc - a_rc) * AK_ro
@@ -225,30 +227,35 @@ def project_onto_plane(v, normal, o):
 
 
 def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
+    # source https://math.stackexchange.com/questions/2213165/find-shortest-distance-between-lines-in-3d
     p1 = np.array(a_rc)
-    AP_rc = np.array(p_new - a_rc)  # d1
     p2 = np.array(o_rc)
-    OK_rc = np.array(k_rc - o_rc)  # d2
+      # d2
+    e1 = p_new - a_rc
+    e2 = k_rc - o_rc
+
     # Find the vector connecting the two points
     v = p1 - p2
 
     # Find the normal vector of the plane
-    n = np.cross(AP_rc, OK_rc)
-    print("cross product AP_rc, OK_rc", n)
+    n = np.cross(e1, e2)
 
     # Find the distance between the two lines
     dist = np.dot(n, -v) / np.linalg.norm(n)
-    # print(f"dist {dist}")
-    AP_rc = Line3D(Point3D(a_rc), Point3D(p_new))
-    OK_rc = Line3D(Point3D(o_rc), Point3D(k_rc))
-    # If the distance is zero, the two lines intersect
+
     if dist == 0:
-        intersection_point = AP_rc.intersection(OK_rc)
+        t1 = np.cross(e2, n).dot(p2 - p1) / n.dot(n)
+        t2 = np.cross(e1, n).dot(p2 - p1) / n.dot(n)
+
+        intersection_point = p1 + t1 * e1
         print("The two lines intersect at point", intersection_point)
 
+        assert (intersection_point != p2 + t2 * e2).any(), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
+
     else:
-        print("The two lines do not intersect.")
-    return dist
+        raise RuntimeError("The two lines do not intersect.")
+
+    return intersection_point
 
 
 def combinations(A, B):
@@ -327,6 +334,9 @@ def get_distance_to_calibration_pattern(test_image, pattern):
                         A_point_im,
                         D_point_im)
 
-    print(f"Distance to pattern orifgin A: {OA_ro / 1000}")
-
     # average_extraction(horizontal_lines_parameters, pattern_size, perimeter_lines, vertical_lines_parameters)
+    w = np.cross([*vp_u, f], [*vp_v, f])
+    w = w / norm(w)
+    l = -w.dot([0, 0, 1]) * OA_ro
+    h = np.sqrt(OA_ro ** 2 - l ** 2)
+    return OA_ro, h, l

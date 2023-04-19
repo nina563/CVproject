@@ -46,7 +46,6 @@ def visual_test(test_image, pattern):
     D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
     plt.scatter(*np.array([A_point_im, D_point_im]).T, marker="*", c="r")
 
-
     f = focal_length(vp_u, vp_v)
     print(f"Focal length: {f} pixels")
 
@@ -54,13 +53,12 @@ def visual_test(test_image, pattern):
 
     # we have already shifted everything so that 0,0 is in P0
     OA_ro = translation(vp_u, f, (0, 0), pattern["square_size"],
-                       A_point_im,
-                       D_point_im)
+                        A_point_im,
+                        D_point_im)
 
-    print(f"Distance to pattern orifgin A: {OA_ro / 1000}")
+    print(f"Distance to pattern origin A: {OA_ro / 1000}")
 
-    return  OA_ro
-
+    return OA_ro
 
 
 def draw_image_with_corners(corners, test_image, title="", p0=(0, 0)):
@@ -87,9 +85,9 @@ if __name__ == '__main__':
     _pattern = checkered_board
 
     vt_oa_ro = visual_test(_test_image, _pattern)
-    assert(vt_oa_ro == get_distance_to_calibration_pattern(_test_image, _pattern))
+    oa_ro, h, l = get_distance_to_calibration_pattern(_test_image, _pattern)
+    assert (vt_oa_ro == oa_ro)
 
+    print(f"Distance to the wall: {l/1000}, Camera height: {h/1000}")
 
     plt.show(block=True)
-
-
