@@ -1,0 +1,7 @@
+numpy~=1.24.2
+matplotlib~=3.7.1
+scikit-learn~=1.2.2
+sympy~=1.11.1
+opencv-python
+PyQt5
+pycairo
