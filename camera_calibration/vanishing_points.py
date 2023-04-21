@@ -203,7 +203,6 @@ def translation(vp_u, f, principal_point, square_size, A_point, D_point):
     K_pos = 4
     K_point = (np.array(D_point) - np.array(A_point)) * K_pos / 7 + np.array(A_point)
 
-    plt.scatter(*K_point, marker="o", c="k")
     k_rc = np.array([*(K_point - principal_point), f])
     a_rc = np.array([*(A_point - principal_point), f])
     vp_u_3d = np.array([*vp_u, f])
@@ -325,7 +324,6 @@ def get_distance_to_calibration_pattern(test_image, pattern):
     # Select A and D in camara coordinates based on fitted lines
     A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
     D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
-    plt.scatter(*np.array([A_point_im, D_point_im]).T, marker="*", c="r")
 
     f = focal_length(vp_u, vp_v)
 
@@ -335,8 +333,8 @@ def get_distance_to_calibration_pattern(test_image, pattern):
                         D_point_im)
 
     # average_extraction(horizontal_lines_parameters, pattern_size, perimeter_lines, vertical_lines_parameters)
-    w = np.cross([*vp_u, f], [*vp_v, f])
-    w = w / norm(w)
-    l = -w.dot([0, 0, 1]) * OA_ro
-    h = np.sqrt(OA_ro ** 2 - l ** 2)
-    return OA_ro, h, l
+    # This position is in mm
+    camera_pos = np.matmul(np.linalg.inv(rotation(vp_u, vp_v, f)),
+                           (OA_ro * ([*A_point_im, f] / norm([*A_point_im, f]))))
+
+    return -camera_pos

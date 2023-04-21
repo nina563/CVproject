@@ -85,9 +85,9 @@ if __name__ == '__main__':
     _pattern = checkered_board
 
     vt_oa_ro = visual_test(_test_image, _pattern)
-    oa_ro, h, l = get_distance_to_calibration_pattern(_test_image, _pattern)
-    assert (vt_oa_ro == oa_ro)
+    x, y, z = get_distance_to_calibration_pattern(_test_image, _pattern)
+    assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
 
-    print(f"Distance to the wall: {l/1000}, Camera height: {h/1000}")
+    print(f"Distance to the wall: {y/1000:0.2}m, distance from the focal axis: {x/1000:0.2}m Camera height: {z/1000:0.2}m")
 
     plt.show(block=True)
