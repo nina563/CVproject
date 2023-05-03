@@ -338,3 +338,22 @@ def get_distance_to_calibration_pattern(test_image, pattern):
                            (OA_ro * ([*A_point_im, f] / norm([*A_point_im, f]))))
 
     return -camera_pos
+
+def get_rotation(test_image, pattern):
+    """Given an image containing a checkerd pattern, it returns the rotation of the camera."""
+
+    # Detect corners and recenter so that P0 is the new origin.
+    p0 = principal_point_coordinates(test_image)
+    corners = pattern_corner_detect(test_image, pattern["dimension"]) - p0
+
+    # Use perimeter lines to compute the distance
+    perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
+    fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
+
+    # Computing Vanishing points
+    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[1]) # in camera coordinates
+    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
+
+    f = focal_length(vp_u, vp_v)
+    rotation_matrix = rotation(vp_u, vp_v, f)
+    return rotation_matrix
