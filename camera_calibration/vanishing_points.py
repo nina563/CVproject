@@ -242,7 +242,7 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
     # Find the distance between the two lines
     dist = np.dot(n, -v) / np.linalg.norm(n)
 
-    if dist == 0:
+    if abs(dist) <= 1e-12:
         t1 = np.cross(e2, n).dot(p2 - p1) / n.dot(n)
         t2 = np.cross(e1, n).dot(p2 - p1) / n.dot(n)
 
@@ -252,7 +252,7 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
         assert (intersection_point != p2 + t2 * e2).any(), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
 
     else:
-        raise RuntimeError("The two lines do not intersect.")
+        raise RuntimeError(f"The two lines do not intersect. Separation = {dist}")
 
     return intersection_point
 
