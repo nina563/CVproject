@@ -80,14 +80,16 @@ def compare_lines_with_parameters(fitted_lines_parameters, lines):
 
 if __name__ == '__main__':
     matplotlib.use('QtCairo')
-    _test_image_path = "frame4.jpg"
-    _test_image = cv2.imread(_test_image_path)
-    _pattern = checkered_board
+    for _test_image_path in [f"cam{i}.jpg" for i in range(1,7)]:
+        _test_image = cv2.imread(_test_image_path)
+        _pattern = checkered_board
 
-    vt_oa_ro = visual_test(_test_image, _pattern)
-    x, y, z = get_distance_to_calibration_pattern(_test_image, _pattern)
-    assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
+        vt_oa_ro = visual_test(_test_image, _pattern)
+        x, y, z = get_distance_to_calibration_pattern(_test_image, _pattern)
+        assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
 
-    print(f"Distance to the wall: {y/1000:0.2}m, distance from the focal axis: {x/1000:0.2}m Camera height: {z/1000:0.2}m")
+        print(f"Distance to the wall: {y/1000:0.2f}m, "
+              f"distance from the focal axis: {x/1000:0.2f}m, "
+              f"camera installation height: {z/1000:0.2f}m")
 
     plt.show(block=True)

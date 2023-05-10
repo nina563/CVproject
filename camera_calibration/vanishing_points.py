@@ -72,6 +72,7 @@ def parameter_lines_detect(img, pattern_size, corners):
         x, y = corner.ravel()
         cv2.circle(img, (int(x), int(y)), 5, (0, 255, 0), -1)
 
+
     for corner in second_horizontal:
         x, y = corner.ravel()
         cv2.circle(img, (int(x), int(y)), 5, (0, 255, 0), -1)
@@ -321,11 +322,12 @@ def get_distance_to_calibration_pattern(test_image, pattern):
     vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[1])
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
 
+    f = focal_length(vp_u, vp_v)
+
     # Select A and D in camara coordinates based on fitted lines
     A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
     D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
 
-    f = focal_length(vp_u, vp_v)
 
     # we have already shifted everything so that 0,0 is in P0
     OA_ro = translation(vp_u, f, (0, 0), pattern["square_size"],
@@ -338,6 +340,7 @@ def get_distance_to_calibration_pattern(test_image, pattern):
                            (OA_ro * ([*A_point_im, f] / norm([*A_point_im, f]))))
 
     return -camera_pos
+
 
 def get_rotation(test_image, pattern):
     """Given an image containing a checkerd pattern, it returns the rotation of the camera."""

@@ -161,7 +161,7 @@ def distance(point1, point2):# Calculates the distance between two points in a 2
 
 def focal_length_calc(vp_u,vp_v,p, p_uv):
     OcVi_len = math.sqrt(distance(vp_v, p_uv ) * distance(p_uv ,vp_u))
-    focal_length =math.sqrt( pow(OcVi_len, 2) -pow(distance(p, p_uv), 2))
+    focal_length = math.sqrt( pow(OcVi_len, 2) -pow(distance(p, p_uv), 2))
     print("focal_length",focal_length)
     return focal_length
 
