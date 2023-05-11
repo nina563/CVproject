@@ -2,12 +2,10 @@ import itertools
 import math
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy.linalg import norm
 from sklearn.linear_model import RANSACRegressor
-from sympy import Line3D, Point3D
-
+from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 
 def pattern_corner_detect(img, pattern_size):
     gray_scale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -200,9 +198,13 @@ def construct_plane(p1, p2, p3):
     return np.concatenate((normal, [d])), normal
 
 
-def translation(vp_u, f, principal_point, square_size, A_point, D_point):
-    K_pos = 4
-    K_point = (np.array(D_point) - np.array(A_point)) * K_pos / 7 + np.array(A_point)
+def translation(vp_u, f, principal_point, square_size, A_point, D_point, camera_name):
+    if camera_name == "cam1" or camera_name == "cam4" or camera_name == "cam6":
+        K_pos = 2
+        K_point = (np.array(D_point) - np.array(A_point)) * K_pos / 4 + np.array(A_point)
+    else:
+        K_pos = 4
+        K_point = (np.array(D_point) - np.array(A_point)) * K_pos / 7 + np.array(A_point)
 
     k_rc = np.array([*(K_point - principal_point), f])
     a_rc = np.array([*(A_point - principal_point), f])
@@ -248,7 +250,7 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
         t2 = np.cross(e1, n).dot(p2 - p1) / n.dot(n)
 
         intersection_point = p1 + t1 * e1
-        print("The two lines intersect at point", intersection_point)
+        #print("The two lines intersect at point", intersection_point)
 
         assert (intersection_point != p2 + t2 * e2).any(), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
 
@@ -263,50 +265,7 @@ def combinations(A, B):
     return combinations
 
 
-def average_extraction(horizontal_lines_parameters, pattern_size, perimeter_lines, vertical_lines_parameters):
-    # get an array of intersecting all the horizontal lines among each other
-    horizontal_vp = find_array_of_intersecting_2Dpoints(horizontal_lines_parameters)
-    vertical_vp = find_array_of_intersecting_2Dpoints(vertical_lines_parameters)
-    # VIZUALISATION
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111)
-    # for x,y in horizontal_vp:
-    #     ax.scatter([x], [y],  color='b', marker='o')
-    # for x,y in vertical_vp:
-    #     ax.scatter([x], [y],  color='b', marker='o')
-    # ax.scatter(vp_u[0], vp_u[1], color='g', marker='o')
-    # ax.scatter(vp_v[0], vp_v[1], color='g', marker='o')
-    #
-    # for x,y in all_corners:
-    #     ax.scatter([x], [y],  color='b', marker='o')
-    combinations_vp = combinations(horizontal_vp, vertical_vp)
-    min = float('inf')
-    count = 0
-    for i in combinations_vp:
-        vp_u, vp_v = i
-        f, K = intrinsic_parameters(img, vp_u, vp_v)
-        rotation_matrix = rotation(vp_u, vp_v, f)
-        ##perimeter_lines ---- first_horizontal, second_horizontal, first_vertical, second_vertical------([slop, intercept],...)
-        # i want to add point vp_u to the first_horizontal, second_horizontal, and vpv to first_vertical, second_vertical
-        np.append(perimeter_lines[0], vp_u)
-        np.append(perimeter_lines[1], vp_u)
-        np.append(perimeter_lines[2], vp_v)
-        np.append(perimeter_lines[3], vp_v)
-        fitted_lines_parameters = [line_fit_ransac(img, line) for line in perimeter_lines]
-        A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
-        D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
-        dist = translation(vp_u, f, img, rotation_matrix, all_corners, square_size_big, pattern_size, A_point_im,
-                           D_point_im)
-        if dist < min:
-            min = dist
-        if count == 0:
-            break
-        count += 1
-    print(min)
-    plt.show(block=True)
-
-
-def get_distance_to_calibration_pattern(test_image, pattern):
+def get_distance_to_calibration_pattern(test_image,image_name, pattern):
     """Given an image containing a checkerd pattern, it returns the distance to the left,lower  most corner in the
        pattern with respect to the camera view. The distance is in the units specified by the pattern.square_size."""
 
@@ -318,31 +277,54 @@ def get_distance_to_calibration_pattern(test_image, pattern):
     perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
     fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
 
+    camera_name = image_name.split('.')[0]
+    starting_pair = globals()[camera_name]["start_pair"]
+    u_pair = globals()[camera_name]["u_pair"]
+    v_pair = globals()[camera_name]["v_pair"]
+
+    first = starting_pair[0]
+
+
     # Computing Vanishing points
-    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[1])
-    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
+    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
+    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
 
     f = focal_length(vp_u, vp_v)
 
-    # Select A and D in camara coordinates based on fitted lines
+    #
     A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
+    B_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[3])
+    C_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[2])
     D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
 
+    # choosing the start coordinates for the calculations
+    if first == "A":
+        start_coordinate_system = A_point_im
+        second_important_point = D_point_im
+    elif first == "B":
+        start_coordinate_system = B_point_im
+        second_important_point = A_point_im
+    elif first == "C":
+        start_coordinate_system = C_point_im
+        second_important_point = B_point_im
+    elif first == "D":
+        start_coordinate_system = D_point_im
+        second_important_point = C_point_im
 
     # we have already shifted everything so that 0,0 is in P0
     OA_ro = translation(vp_u, f, (0, 0), pattern["square_size"],
-                        A_point_im,
-                        D_point_im)
+                        start_coordinate_system,
+                        second_important_point, camera_name)
 
     # average_extraction(horizontal_lines_parameters, pattern_size, perimeter_lines, vertical_lines_parameters)
     # This position is in mm
     camera_pos = np.matmul(np.linalg.inv(rotation(vp_u, vp_v, f)),
-                           (OA_ro * ([*A_point_im, f] / norm([*A_point_im, f]))))
+                           (OA_ro * ([*start_coordinate_system, f] / norm([*start_coordinate_system, f]))))
 
     return -camera_pos
 
 
-def get_rotation(test_image, pattern):
+def get_rotation(test_image, image_name, pattern):
     """Given an image containing a checkerd pattern, it returns the rotation of the camera."""
 
     # Detect corners and recenter so that P0 is the new origin.
@@ -353,9 +335,13 @@ def get_rotation(test_image, pattern):
     perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
     fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
 
+    camera_name = image_name.split('.')[0]
+    u_pair = globals()[camera_name]["u_pair"]
+    v_pair = globals()[camera_name]["v_pair"]
+
     # Computing Vanishing points
-    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[1]) # in camera coordinates
-    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[2], fitted_lines_parameters[3])
+    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
+    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
 
     f = focal_length(vp_u, vp_v)
     rotation_matrix = rotation(vp_u, vp_v, f)
