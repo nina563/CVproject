@@ -15,32 +15,8 @@ def pattern_corner_detect(img, pattern_size):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     corners = cv2.cornerSubPix(gray_scale, corners, (11, 11), (-1, -1), criteria)
     cv2.drawChessboardCorners(gray_scale, pattern_size, corners, ret)
-    #     if ret == True: # if the detection was succesful or not
-    # #@Draw and display the corners
-    #         cv2.drawChessboardCorners(gray_scale, pattern_size, corners, ret)
-    #         cv2.imshow("", gray_scale)
-    #         cv2.waitKey(0)
-
-    # reform corners arry from (n,1,2) into (n,2)
     reshaped_corners = corners.reshape(-1, 2)
     return reshaped_corners
-
-
-def edge_corners_detect(img, pattern_size, corners):
-    # generating ids of the spesific pattern
-    x, y = pattern_size
-    corner_ids = [0, x - 1, x * y - x, x * y - 1]
-    edge_corners = corners[corner_ids]
-    # Draw the edge corners on the image
-    for corner in edge_corners:
-        x, y = corner.ravel()
-        cv2.circle(img, (int(x), int(y)), 5, (0, 255, 0), -1)
-    #
-    # # Show the image
-    # cv2.imshow('Chessboard Corners', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    return edge_corners
 
 
 def all_lines_detect(pattern_size, corners):
@@ -82,11 +58,6 @@ def parameter_lines_detect(img, pattern_size, corners):
     for corner in second_vertical:
         x, y = corner.ravel()
         cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), 2)
-
-    # Show the image
-    # cv2.imshow('Chessboard Corners', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
     return first_horizontal, second_horizontal, first_vertical, second_vertical
 
 
@@ -113,18 +84,6 @@ def intersection_2Dpoints_detect(line_1_parameter, line_2_parameter):
     y_intersect = slope1 * x_intersect + intercept1
     points = np.array((x_intersect, y_intersect))
     return points
-
-
-def find_array_of_intersecting_2Dpoints(lines):
-    # Find all the intersection points among the lines
-    intersections = []
-    for i, line1 in enumerate(lines):
-        for line2 in lines[i + 1:]:
-            intersection = intersection_2Dpoints_detect(line1, line2)
-            if intersection is not None:
-                intersections.append(intersection)
-    return intersections
-
 
 def distance(point1, point2):  # Calculates the distance between two points in a 2D coordinate system.
     x1 = point1[0]
@@ -190,14 +149,6 @@ def rotation(vp_u, vp_v, f):
     return rotation
 
 
-def construct_plane(p1, p2, p3):
-    v1 = np.array(p2) - np.array(p1)
-    v2 = np.array(p3) - np.array(p1)
-    normal = np.cross(v1, v2)
-    d = -np.dot(normal, np.array(p1))
-    return np.concatenate((normal, [d])), normal
-
-
 def translation(vp_u, f, principal_point, square_size, A_point, D_point, camera_name):
     if camera_name == "cam1" or camera_name == "cam4" or camera_name == "cam6":
         K_pos = 2
@@ -218,14 +169,6 @@ def translation(vp_u, f, principal_point, square_size, A_point, D_point, camera_
     OA_ro = norm(a_rc) / norm(Kp_rc - a_rc) * AK_ro
 
     return OA_ro  # in mm
-
-
-def project_onto_plane(v, normal, o):
-    # Compute the dot product of the normal vector with the vector you want to project.
-    signed_distance = np.dot(normal, v - o)
-    # Subtract the projection of the vector onto the normal vector from the original vector-  Calculate the projection of vector AP onto the plane OAK.
-    projection = v - signed_distance / np.dot(normal, normal) * normal
-    return projection
 
 
 def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
@@ -258,11 +201,6 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
         raise RuntimeError(f"The two lines do not intersect. Separation = {dist}")
 
     return intersection_point
-
-
-def combinations(A, B):
-    combinations = list(itertools.product(A, B))
-    return combinations
 
 
 def get_distance_to_calibration_pattern(test_image,image_name, pattern):
