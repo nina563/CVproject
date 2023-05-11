@@ -5,9 +5,9 @@ from load import load_images
 from callibration_patterns import checkered_board
 
 
-def get_extrinsic_matrix_per_camera(img, pattern):
-    rotation_matrix = get_rotation(img, pattern)
-    translation_vector = np.array(get_distance_to_calibration_pattern(img, pattern)).reshape((3,))
+def get_extrinsic_matrix_per_camera(img,image_name, pattern):
+    rotation_matrix = get_rotation(img, image_name,pattern)
+    translation_vector = np.array(get_distance_to_calibration_pattern(img,image_name, pattern)).reshape((3,))
     translation_vector = translation_vector/1000 #mm into m
     extrinsic_matrix = np.identity(4)
     extrinsic_matrix[:3,:3]= rotation_matrix
@@ -47,7 +47,7 @@ def get_global_transform_per_camera(camera_name, pattern):
     return translation_matrix
 
 def get_global_extrisic_matrix(img, image_name,pattern):
-    extrinsic = get_extrinsic_matrix_per_camera(img, pattern)
+    extrinsic = get_extrinsic_matrix_per_camera(img,image_name, pattern)
     transform_from_local_to_global = get_global_transform_per_camera(image_name, pattern)
     global_extrinsic_matrix = np.matmul(transform_from_local_to_global, extrinsic)
     return global_extrinsic_matrix

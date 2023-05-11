@@ -3,7 +3,7 @@ import cv2
 
 def load_images():
     """returns a dictionary of 6 images with their file names as keys """
-    folder_path =os.path.join(os.getcwd(), "tests", "one_image_per_camera")
+    folder_path = '/Users/nina/Desktop/Project/project_after_luis/one_image_per_camera'
     # retrieve the names of all files in the folder
     file_names = os.listdir(folder_path)
     image_names = [name for name in file_names]
