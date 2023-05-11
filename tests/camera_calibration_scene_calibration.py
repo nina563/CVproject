@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 
 
 
-def floor_map(pattern):
-    x_pattern_size, y_pattern_size = pattern["size"]
-    x_blank = pattern["x_blank"]
-    y_blank = pattern["y_blank"]
+def floor_map(_pattern):
+    x_pattern_size, y_pattern_size = _pattern["size"]
+    x_blank = _pattern["x_blank"]
+    y_blank = _pattern["y_blank"]
     distance_between_patterns = 3000  # 3 m = 3000 mm
     pattern_actual_x = x_pattern_size - 2 * x_blank
     pattern_actual_y = y_pattern_size - 2 * y_blank
@@ -80,9 +80,41 @@ def map_test(pattern):
 
 
 def visual_test(image, image_name, _pattern):
-
     camera_name = image_name.split('.')[0]
     position = globals()[camera_name]["position"] # 1,2,3 position on the floor
+    starting_pair = globals()[camera_name]["start_pair"]
+
+    start_coordinate_system = starting_pair[0]
+    #name of the point on the floor , that is our start of coordinate system
+    point_name = start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
+    print(point_name)
+
+
+    array_of_floor_points = floor_map(_pattern)
+
+    array_points_name = np.array([
+        "A_pattern_coordinate_3_position",
+        "B_pattern_coordinate_3_position",
+        "C_pattern_coordinate_3_position",
+        "D_pattern_coordinate_3_position",
+        "A_pattern_coordinate_2_position",
+        "B_pattern_coordinate_2_position",
+        "C_pattern_coordinate_2_position",
+        "D_pattern_coordinate_2_position",
+        "A_pattern_coordinate_1_position",
+        "B_pattern_coordinate_1_position",
+        "C_pattern_coordinate_1_position",
+        "D_pattern_coordinate_1_position"
+    ])
+
+
+    index = np.where(array_points_name == point_name)[0]
+    if index.size > 0:
+        coordinate_system_start = array_of_floor_points[index[0]]
+        print("start of the coordinate system - ", point_name,coordinate_system_start,"\n" )
+    else:
+        print("Value not found in the array.")
+
 
 
 
@@ -97,7 +129,7 @@ if __name__ == '__main__':
     for key in images:
         image_name = key # for example : cam6.jpg
         image = images[image_name]
-        # vt_oa_ro = visual_test(image, image_name, _pattern)
+        visual_test(image, image_name, _pattern)
         # x, y, z = get_distance_to_calibration_pattern(image,image_name, _pattern)
         # assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
         #
