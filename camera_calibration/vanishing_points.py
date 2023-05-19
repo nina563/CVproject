@@ -125,10 +125,12 @@ def intrinsic_parameters(img, vp_u, vp_v):
     ap = p_point - vp_v
     ab = vp_u - vp_v
     p_uv = vp_v + np.dot(ap, ab) / np.dot(ab, ab) * ab
-    f = focal_length_calc(vp_u, vp_v, p, p_uv)  # focal length
+    f = focal_length(vp_u-p_point, vp_v-p_point)
+    # f = focal_length_calc(vp_u, vp_v, p, p_uv)  # focal length
     K = np.array([[scale_factor_u * f, skew, u0],
                   [0, scale_factor_v * f, v0],
                   [0, 0, 1]])
+    print("focal length from intrinsics", f)
     return f, K
 
 
@@ -228,7 +230,6 @@ def get_distance_to_calibration_pattern(test_image,image_name, pattern):
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
 
     f = focal_length(vp_u, vp_v)
-
     #
     A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
     B_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[3])
@@ -284,3 +285,20 @@ def get_rotation(test_image, image_name, pattern):
     f = focal_length(vp_u, vp_v)
     rotation_matrix = rotation(vp_u, vp_v, f)
     return rotation_matrix
+
+
+def get_intrinsic_matrix(test_image, image_name, pattern):
+    corners = pattern_corner_detect(test_image, pattern["dimension"])
+    perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
+    fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
+
+    camera_name = image_name.split('.')[0]
+    u_pair = globals()[camera_name]["u_pair"]
+    v_pair = globals()[camera_name]["v_pair"]
+
+    # Computing Vanishing points
+    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
+    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
+
+    intrinsic_matrix = intrinsic_parameters(test_image, vp_u, vp_v)
+    return intrinsic_matrix

@@ -6,6 +6,7 @@ from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5,
 from load import load_images
 from scene_calibration import floor_map, rotation_matrix, get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_global_transform_per_camera
 import matplotlib.pyplot as plt
+from camera_calibration.vanishing_points import get_distance_to_calibration_pattern
 
 
 def map_test(pattern):
@@ -15,8 +16,17 @@ def map_test(pattern):
     x = [point[0] for point in array_of_floor_points]
     y = [point[1] for point in array_of_floor_points]
 
-    # Create a scatter plot
+    names = ["A",
+        "B","C", "D", "A",
+        "B","C", "D", "A",
+        "B","C", "D"]
+
+    # Plot the points
     plt.scatter(x, y)
+
+    # Plot the names of the points
+    for i in range(len(x)):
+        plt.text(x[i], y[i], names[i], fontsize=12, ha='center', va='bottom')
 
     # Set labels and title
     plt.xlabel('X')
@@ -84,15 +94,18 @@ def visual_test(image, image_name, pattern):
     x = [point[0] for point in array_of_floor_points]
     y = [point[1] for point in array_of_floor_points]
 
-    # Create a scatter plot
+    x_cam,y_cam,z_cam = get_distance_to_calibration_pattern(image,image_name, pattern)
+    print("x_cam,y_cam,z_cam", x_cam,y_cam,z_cam)
     plt.scatter(x, y, c = 'b')
     plt.scatter(coordinate_system_start[0], coordinate_system_start[1], c = 'r')
+    plt.scatter((x_cam+coordinate_system_start[0]),(y_cam+coordinate_system_start[1]), c ='g')
 
     # Set labels and title
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('2D Scatter Plot')
     # Set aspect ratio
+    plt.gca().grid("on")
     plt.gca().set_aspect('equal', adjustable='box')
 
     # Show the plot
@@ -116,11 +129,11 @@ if __name__ == '__main__':
     images = load_images()
     _pattern = checkered_board
 
-    # map_test(_pattern)
-
-    for key in images:
-        image_name = key # for example : cam6.jpg
-        image = images[image_name]
-        visual_test(image, image_name, _pattern)
+    map_test(_pattern)
+    #
+    # for key in images:
+    #     image_name = key # for example : cam6.jpg
+    #     image = images[image_name]
+    #     visual_test(image, image_name, _pattern)
 
     plt.show(block=True)

@@ -36,7 +36,6 @@ def visual_test(test_image,image_name, pattern):
     v_pair = globals()[camera_name]["v_pair"]
 
     first = starting_pair[0]
-    print("camera_name", camera_name,"u", u_pair, "v", v_pair )
 
 
     # Computing Vanishing points
@@ -74,8 +73,7 @@ def visual_test(test_image,image_name, pattern):
 
     plt.scatter(*np.array([start_coordinate_system, second_important_point]).T, marker="*", c="r")
     f = focal_length(vp_u, vp_v)
-
-    print(f"Focal length: {f} pixels")
+    print(f"Focal length (extrinsic ): {f} pixels")
 
     rotation_matrix = rotation(vp_u, vp_v, f)
 
@@ -87,6 +85,26 @@ def visual_test(test_image,image_name, pattern):
                            (OA_ro * ([*start_coordinate_system, f] / norm([*start_coordinate_system, f]))))
 
     return OA_ro
+
+def intrinsics_test(test_image,image_name, pattern):
+    corners = pattern_corner_detect(test_image, pattern["dimension"])
+    draw_image_with_corners(corners, test_image)
+
+    perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
+    fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
+
+    camera_name = image_name.split('.')[0]
+    u_pair = globals()[camera_name]["u_pair"]
+    v_pair = globals()[camera_name]["v_pair"]
+
+    # Computing Vanishing points
+    vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
+    vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
+    draw_image_with_corners(corners, test_image, "Vanishing Points")
+    plt.scatter(*np.array([vp_u, vp_v]).T, marker="*")
+
+    intrinsic_matrix = intrinsic_parameters(test_image, vp_u, vp_v)
+    print("intrinsic_matrix", intrinsic_matrix)
 
 
 def draw_image_with_corners(corners, test_image, title="", p0=(0, 0)):
@@ -114,8 +132,10 @@ if __name__ == '__main__':
     for key in images:
         image_name = key # for example : cam6.jpg
         image = images[image_name]
+
         vt_oa_ro = visual_test(image, image_name, _pattern)
         x, y, z = get_distance_to_calibration_pattern(image,image_name, _pattern)
+        intrinsics_test(image, image_name, _pattern)
         assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
 
         print(f"Distance to the wall: {y/1000:0.2f}m, "

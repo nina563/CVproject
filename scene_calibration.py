@@ -13,11 +13,8 @@ def floor_map(_pattern):
     pattern_actual_x = x_pattern_size - 2 * x_blank
     pattern_actual_y = y_pattern_size - 2 * y_blank
     D_edge_coordinate_3_position = np.array([2000, 2000, 0])  # 2m , 2m ,0 x, y, z
-    print(" D_edge_coordinate_3_position",  D_edge_coordinate_3_position)
     A_edge_coordinate_3_position = D_edge_coordinate_3_position - np.array([x_pattern_size, 0, 0])
-    print("A_edge_coordinate_3_position ", A_edge_coordinate_3_position )
     A_pattern_coordinate_3_position = A_edge_coordinate_3_position + np.array([x_blank, y_blank, 0])
-    print("A_pattern_coordinate_3_position ", A_pattern_coordinate_3_position )
     B_pattern_coordinate_3_position = A_pattern_coordinate_3_position + np.array([0, pattern_actual_y, 0])
     C_pattern_coordinate_3_position = B_pattern_coordinate_3_position + np.array([pattern_actual_x, 0, 0])
     D_pattern_coordinate_3_position = A_pattern_coordinate_3_position + np.array([pattern_actual_x, 0, 0])
