@@ -68,7 +68,7 @@ def get_coordinates_from_point_names(point_name,_pattern):
     index = np.where(array_points_name == point_name)[0]
     if index.size > 0:
         coordinate_system_start = array_of_floor_points[index[0]]
-        print("start of the coordinate system - ", point_name,coordinate_system_start )
+        # print("start of the coordinate system - ", point_name,coordinate_system_start )
     else:
         print("Value not found in the array.")
 
@@ -104,16 +104,12 @@ def local_rotation(angle):
 def rotation_matrix(start_coordinate_system):
     rotation_matrix = np.identity(4)
     if start_coordinate_system == "A":
-        print("0")
         rotation_matrix[:3,:3] = local_rotation(0)
     elif start_coordinate_system == "B":
-        print("90 counterclockwise ")
         rotation_matrix[:3, :3] = local_rotation(np.pi/2)
     elif start_coordinate_system == "C":
-        print("180 counterclockwise")
         rotation_matrix[:3,:3] = local_rotation(np.pi)
     else:
-        print("270 counterclockwise")
         rotation_matrix[:3,:3] = local_rotation(3*np.pi/2)
 
     return rotation_matrix
@@ -137,14 +133,14 @@ def get_global_extrisic_matrix(img, image_name,pattern):
 
     #name of the point on the floor , that is our start of coordinate system
     point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
-    print("start of the coordinate system", point_name)
+    # print("start of the coordinate system", point_name)
 
 
     transform_from_local_to_global = get_global_transform_per_camera(point_name, pattern)
     rotation_local_to_global  = rotation_matrix(letter_start_coordinate_system)
 
     global_extrinsic_matrix = np.matmul(transform_from_local_to_global,np.matmul(rotation_local_to_global, extrinsic))
-    print("extrinsic_matrix of camera", camera_name, "-\n", global_extrinsic_matrix, "\n" )
+    # print("extrinsic_matrix of camera", camera_name, "-\n", global_extrinsic_matrix, "\n" )
     return global_extrinsic_matrix
 
 def global_extrisic_matrix_for_all():
