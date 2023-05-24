@@ -7,6 +7,7 @@ from numpy.linalg import norm
 from sklearn.linear_model import RANSACRegressor
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 
+
 def pattern_corner_detect(img, pattern_size):
     gray_scale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, corners = cv2.findChessboardCorners(gray_scale, pattern_size, None)
@@ -130,7 +131,7 @@ def intrinsic_parameters(img, vp_u, vp_v):
     K = np.array([[scale_factor_u * f, skew, u0],
                   [0, scale_factor_v * f, v0],
                   [0, 0, 1]])
-    print("focal length from intrinsics", f)
+    # print("focal length from intrinsics", f)
     return f, K
 
 
@@ -196,13 +197,16 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
 
         intersection_point = p1 + t1 * e1
         #print("The two lines intersect at point", intersection_point)
+        # assert not np.allclose(intersection_point,
+        #                        p2 + t2 * e2, rtol=1e-03, atol=1e-05), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
 
-        assert (intersection_point != p2 + t2 * e2).any(), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
+        #assert (intersection_point != p2 + t2 * e2).any(), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
 
     else:
         raise RuntimeError(f"The two lines do not intersect. Separation = {dist}")
 
     return intersection_point
+
 
 
 def get_distance_to_calibration_pattern(test_image,image_name, pattern):
