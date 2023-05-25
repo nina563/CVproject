@@ -1,12 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import math
 import matplotlib
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 from load import load_images
-from scene_calibration import floor_map, rotation_matrix, get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_global_transform_per_camera
+from scene_calibration import floor_map, rotation_matrix, get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_global_transform_per_camera, get_global_extrisic_matrix
 import matplotlib.pyplot as plt
-from camera_calibration.vanishing_points import get_distance_to_calibration_pattern
+from camera_calibration.vanishing_points import get_distance_to_calibration_pattern, get_intrinsic_matrix
 
 
 def map_test(pattern):
@@ -124,12 +122,25 @@ def visual_test(image, image_name, pattern):
 
 
 
+def save_matrix(images, _pattern):
+
+    with open('extrinsic_intrinsic', 'a', encoding='utf-8') as file_re:
+        for key in images:
+            image_name = key  # for example : cam6.jpg
+            image = images[image_name]
+            global_extrisic_matrix = get_global_extrisic_matrix(image, image_name, _pattern)
+            intrinsic_matrix = get_intrinsic_matrix(image, image_name, _pattern)
+            string = "Image: {}\nIntrinsic matrix:\n {} \nGlobal extrinsic matrix:\n {} \n".format(image_name,intrinsic_matrix,
+                                                                                                        global_extrisic_matrix)
+            file_re.write(string + '\n')
+
+
 if __name__ == '__main__':
     matplotlib.use('QtCairo')
     images = load_images()
     _pattern = checkered_board
-
-    map_test(_pattern)
+    save_matrix(images, _pattern)
+    # map_test(_pattern)
     #
     # for key in images:
     #     image_name = key # for example : cam6.jpg

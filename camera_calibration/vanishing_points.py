@@ -1,4 +1,3 @@
-import itertools
 import math
 
 import cv2
@@ -86,6 +85,7 @@ def intersection_2Dpoints_detect(line_1_parameter, line_2_parameter):
     points = np.array((x_intersect, y_intersect))
     return points
 
+
 def distance(point1, point2):  # Calculates the distance between two points in a 2D coordinate system.
     x1 = point1[0]
     y1 = point1[1]
@@ -94,14 +94,17 @@ def distance(point1, point2):  # Calculates the distance between two points in a
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
-def focal_length_calc(vp_u, vp_v, p, p_uv):
+def focal_length_calc(vp_u, vp_v, p_point): # p - is not (0,0)
+    ap = p_point - vp_v
+    ab = vp_u - vp_v
+    p_uv = vp_v + np.dot(ap, ab) / np.dot(ab, ab) * ab
     OcVi_len = math.sqrt(distance(vp_v, p_uv) * distance(p_uv, vp_u))
-    focal_length = math.sqrt(pow(OcVi_len, 2) - pow(distance(p, p_uv), 2))
+    focal_length = math.sqrt(pow(OcVi_len, 2) - pow(distance(p_point, p_uv), 2))
     return focal_length
 
 
-def focal_length(vp_u, vp_v, p=(0, 0)):
-    return np.sqrt((-(vp_u - p)).dot(vp_v - p))
+# def focal_length(vp_u, vp_v, p=(0, 0)):
+#     return np.sqrt((-(vp_u - p)).dot(vp_v - p))
 
 
 def principal_point_coordinates(img):
@@ -122,17 +125,11 @@ def intrinsic_parameters(img, vp_u, vp_v):
     vp_u = np.array(vp_u)
     vp_v = np.array(vp_v)
     p = np.array(p_point)
-
-    ap = p_point - vp_v
-    ab = vp_u - vp_v
-    p_uv = vp_v + np.dot(ap, ab) / np.dot(ab, ab) * ab
-    f = focal_length(vp_u-p_point, vp_v-p_point)
-    # f = focal_length_calc(vp_u, vp_v, p, p_uv)  # focal length
+    f = focal_length_calc(vp_u+p, vp_v+p, p)
     K = np.array([[scale_factor_u * f, skew, u0],
                   [0, scale_factor_v * f, v0],
                   [0, 0, 1]])
-    # print("focal length from intrinsics", f)
-    return f, K
+    return K
 
 
 def rotation(vp_u, vp_v, f):
@@ -197,11 +194,8 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
 
         intersection_point = p1 + t1 * e1
         #print("The two lines intersect at point", intersection_point)
-        # assert not np.allclose(intersection_point,
-        #                        p2 + t2 * e2, rtol=1e-03, atol=1e-05), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
-
-        #assert (intersection_point != p2 + t2 * e2).any(), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
-
+        assert np.allclose(intersection_point,
+                                p2 + t2 * e2, rtol=0, atol=1e-06), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
     else:
         raise RuntimeError(f"The two lines do not intersect. Separation = {dist}")
 
@@ -233,8 +227,8 @@ def get_distance_to_calibration_pattern(test_image,image_name, pattern):
     vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
 
-    f = focal_length(vp_u, vp_v)
-    #
+    f = focal_length_calc(vp_u, vp_v, [0,0])
+
     A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
     B_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[3])
     C_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[2])
@@ -259,7 +253,6 @@ def get_distance_to_calibration_pattern(test_image,image_name, pattern):
                         start_coordinate_system,
                         second_important_point, camera_name)
 
-    # average_extraction(horizontal_lines_parameters, pattern_size, perimeter_lines, vertical_lines_parameters)
     # This position is in mm
     camera_pos = np.matmul(np.linalg.inv(rotation(vp_u, vp_v, f)),
                            (OA_ro * ([*start_coordinate_system, f] / norm([*start_coordinate_system, f]))))
@@ -285,14 +278,14 @@ def get_rotation(test_image, image_name, pattern):
     # Computing Vanishing points
     vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
-
-    f = focal_length(vp_u, vp_v)
+    f = focal_length_calc(vp_u, vp_v, [0,0] )
     rotation_matrix = rotation(vp_u, vp_v, f)
     return rotation_matrix
 
 
 def get_intrinsic_matrix(test_image, image_name, pattern):
-    corners = pattern_corner_detect(test_image, pattern["dimension"])
+    p0 = principal_point_coordinates(test_image)
+    corners = pattern_corner_detect(test_image, pattern["dimension"]) - p0
     perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
     fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
 
