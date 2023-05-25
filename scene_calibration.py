@@ -78,7 +78,7 @@ def get_coordinates_from_point_names(point_name,_pattern):
 def get_extrinsic_matrix_per_camera(img,image_name, pattern):
     rotation_matrix = get_rotation(img, image_name,pattern)
     translation_vector = np.array(get_distance_to_calibration_pattern(img,image_name, pattern)).reshape((3,))
-    translation_vector = translation_vector/1000 #mm into m
+    translation_vector = translation_vector
     extrinsic_matrix = np.identity(4)
     extrinsic_matrix[:3,:3]= rotation_matrix
     extrinsic_matrix[:3,3] = translation_vector
