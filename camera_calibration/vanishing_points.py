@@ -131,6 +131,9 @@ def intrinsic_parameters(img, vp_u, vp_v):
                   [0, 0, 1]])
     return K
 
+def pixel_to_mm(pixel_coordinate):
+    mm_coordinate= np.array([pixel_coordinate[0]*1.8*2.54/ 3.072, pixel_coordinate[1]*1* 2.54/ 2.048])
+    return mm_coordinate
 
 def rotation(vp_u, vp_v, f):
     len_u_rc = math.sqrt(vp_u[0] ** 2 + vp_u[1] ** 2 + f ** 2)
@@ -279,6 +282,7 @@ def get_rotation(test_image, image_name, pattern):
     vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
     f = focal_length_calc(vp_u, vp_v, [0,0] )
+    print("focal length", f)
     rotation_matrix = rotation(vp_u, vp_v, f)
     return rotation_matrix
 
