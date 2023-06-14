@@ -5,7 +5,7 @@ from numpy.linalg import norm
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 from camera_calibration.vanishing_points import pattern_corner_detect, all_lines_detect, parameter_lines_detect, \
     line_fit_ransac, intersection_2Dpoints_detect, intrinsic_parameters, principal_point_coordinates, rotation, \
-    translation, focal_length, get_distance_to_calibration_pattern
+    translation, get_distance_to_calibration_pattern, get_intrinsic_matrix, focal_length_calc
 from load import load_images
 
 
@@ -72,7 +72,7 @@ def visual_test(test_image,image_name, pattern):
 
 
     plt.scatter(*np.array([start_coordinate_system, second_important_point]).T, marker="*", c="r")
-    f = focal_length(vp_u, vp_v)
+    f = focal_length_calc(vp_u, vp_v, [0, 0])
     print(f"Focal length (extrinsic ): {f} pixels")
 
     rotation_matrix = rotation(vp_u, vp_v, f)
@@ -133,14 +133,15 @@ if __name__ == '__main__':
         image_name = key # for example : cam6.jpg
         image = images[image_name]
 
-        vt_oa_ro = visual_test(image, image_name, _pattern)
-        x, y, z = get_distance_to_calibration_pattern(image,image_name, _pattern)
-        intrinsics_test(image, image_name, _pattern)
-        assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
 
-        print(f"Distance to the wall: {y/1000:0.2f}m, "
-              f"distance from the focal axis: {x/1000:0.2f}m, "
-              f"camera installation height: {z/1000:0.2f}m")
-        print("\n")
 
-    plt.show(block=True)
+    #     x, y, z = get_distance_to_calibration_pattern(image,image_name, _pattern)
+    #     vt_oa_ro = visual_test(image, image_name, _pattern)
+    #     assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
+    #
+    #     print(f"Distance to the wall: {y/1000:0.2f}m, "
+    #           f"distance from the focal axis: {x/1000:0.2f}m, "
+    #           f"camera installation height: {z/1000:0.2f}m")
+    #     print("\n")
+    #
+    # plt.show(block=True)

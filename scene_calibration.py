@@ -78,7 +78,7 @@ def get_coordinates_from_point_names(point_name,_pattern):
 def get_extrinsic_matrix_per_camera(img,image_name, pattern):
     rotation_matrix = get_rotation(img, image_name,pattern)
     translation_vector = np.array(get_distance_to_calibration_pattern(img,image_name, pattern)).reshape((3,))
-    translation_vector = translation_vector/1000 #mm into m
+    translation_vector = translation_vector
     extrinsic_matrix = np.identity(4)
     extrinsic_matrix[:3,:3]= rotation_matrix
     extrinsic_matrix[:3,3] = translation_vector
@@ -106,11 +106,11 @@ def rotation_matrix(start_coordinate_system):
     if start_coordinate_system == "A":
         rotation_matrix[:3,:3] = local_rotation(0)
     elif start_coordinate_system == "B":
-        rotation_matrix[:3, :3] = local_rotation(np.pi/2)
+        rotation_matrix[:3, :3] = local_rotation(3*np.pi/2)
     elif start_coordinate_system == "C":
         rotation_matrix[:3,:3] = local_rotation(np.pi)
     else:
-        rotation_matrix[:3,:3] = local_rotation(3*np.pi/2)
+        rotation_matrix[:3,:3] = local_rotation(np.pi/2)
 
     return rotation_matrix
 
@@ -119,9 +119,26 @@ def rotation_matrix(start_coordinate_system):
 def get_global_transform_per_camera(point_name, pattern):
     translation_matrix = np.identity(4)
     coordinate_system_start = get_coordinates_from_point_names(point_name, pattern)
-    translation_matrix[:3, 3] = - coordinate_system_start
+    translation_matrix[:3, 3] =  coordinate_system_start
 
     return translation_matrix
+
+def get_local_to_global_transform(image_name,pattern):
+
+    camera_name = image_name.split('.')[0]
+    position = globals()[camera_name]["position"] # 1,2,3 position on the floor
+    starting_pair = globals()[camera_name]["start_pair"]
+    letter_start_coordinate_system = starting_pair[0]
+
+    #name of the point on the floor , that is our start of coordinate system
+    point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
+    # print("start of the coordinate system", point_name)
+
+
+    transform_from_local_to_global = get_global_transform_per_camera(point_name, pattern)
+    rotation_local_to_global  = rotation_matrix(letter_start_coordinate_system)
+    return rotation_local_to_global, transform_from_local_to_global
+
 
 def get_global_extrisic_matrix(img, image_name,pattern):
     extrinsic = get_extrinsic_matrix_per_camera(img,image_name, pattern)
@@ -150,6 +167,7 @@ def global_extrisic_matrix_for_all():
         image_name = key # for example : cam6.jpg
         image = images[image_name]
         get_global_extrisic_matrix(image, image_name,_pattern )
+
 
 
 if __name__ == '__main__':
