@@ -1,9 +1,11 @@
 from scene_calibration import floor_map, get_global_transform_per_camera, rotation_matrix,\
-    get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_local_to_global_transform
+    get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_local_to_global_transform, get_rotation
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
-from camera_calibration.vanishing_points import get_distance_to_calibration_pattern, get_intrinsic_matrix, pattern_corner_detect
+
+from camera_calibration.vanishing_points import get_distance_to_calibration_pattern, get_intrinsic_matrix, pattern_corner_detect, principal_point_coordinates
 import numpy as np
 from load import load_images
+from math import asin, pi, atan2, cos
 import cv2
 from pathlib import Path
 import pickle
@@ -20,18 +22,19 @@ def get_global_camera_position(test_image,image_name, pattern):
     point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
 
     transform_from_local_to_global = get_global_transform_per_camera(point_name, pattern)
+    print("letter_start_coordinate_system", letter_start_coordinate_system)
     rotation_local_to_global = rotation_matrix(letter_start_coordinate_system)
     local_camera_pos = get_distance_to_calibration_pattern(test_image,image_name, pattern)# in mm
-    print("local_camera_pos",local_camera_pos)
+    # print("local_camera_pos",local_camera_pos)
     reshaped_array = np.append(local_camera_pos, 1)
     # Reshape the modified array to shape (4, 1)
     reshaped_local_camera_pos = np.reshape(reshaped_array, (4, 1))
 
     global_local_camera = np.matmul(transform_from_local_to_global,np.matmul(rotation_local_to_global, reshaped_local_camera_pos))
-    print("global_local_camera", global_local_camera)
+    # print("global_local_camera", global_local_camera)
     global_local_camera= global_local_camera/global_local_camera[-1]
-    print("global_local_camera", global_local_camera)
-    print("global", np.squeeze(global_local_camera[:3]))
+    # print("global_local_camera", global_local_camera)
+    # print("global", np.squeeze(global_local_camera[:3]))
     return np.squeeze(global_local_camera[:3])
 
 
@@ -134,6 +137,7 @@ def pixel_coord_camN_to_global_coord(camN_image, image_name, pattern):
     corner_ids = [0, x - 1, x * y - x, x * y - 1]
     corners = pattern_corner_detect(camN_image, pattern["dimension"])
     edge_corners = corners[corner_ids] # a,b,c,d
+    print("edge_corners", edge_corners)
 
     extrinsic_matrix = get_extrinsic_matrix_per_camera(camN_image, image_name, pattern)
     intrinsic_matrix = get_intrinsic_matrix(camN_image, image_name, pattern)
@@ -230,26 +234,97 @@ def global_coord_to_pixel(image, image_name, pattern):
     coord_C = pixel_coord_C/pixel_coord_C[-1]
     coord_D = pixel_coord_D/pixel_coord_D[-1]
     plt.imshow(image)
-    plt.scatter(coord_A[0], coord_A[1])
-    plt.scatter(coord_B[0], coord_B[1])
-    plt.scatter(coord_C[0], coord_C[1])
-    plt.scatter(coord_D[0], coord_D[1])
+    plt.scatter(coord_A[0], coord_A[1], marker="*")
+    plt.scatter(coord_B[0], coord_B[1], c = "r")
+    plt.scatter(coord_C[0], coord_C[1],  c = "g")
+    plt.scatter(coord_D[0], coord_D[1], c = "b")
     plt.show(block=True)
+
+def rotation_matrix_to_euler_angles(rotation_matrix):
+    sy = np.sqrt(rotation_matrix[2, 1] * rotation_matrix[2, 1] + rotation_matrix[2, 2] * rotation_matrix[2, 2])
+
+    singular = sy < 1e-6
+
+    if not singular:
+        x = np.arctan2(rotation_matrix[2, 1], rotation_matrix[2, 2])
+        y = np.arctan2(-rotation_matrix[2, 0], sy)
+        z = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
+    else:
+        x = np.arctan2(-rotation_matrix[1, 2], rotation_matrix[1, 1])
+        y = np.arctan2(-rotation_matrix[2, 0], sy)
+        z = 0
+
+    return np.array([x, y, z])*180/pi
 
 
 if __name__ == '__main__':
     images = load_images()
     _pattern = checkered_board
-    image_name = 'cam2.jpg'
+    image_name = 'cam1.jpg'
     image = images[image_name]
+    # extrinsic = get_extrinsic_matrix_per_camera(image, image_name, _pattern)
+    # print("extrinsic\n", extrinsic)
+
+    rotation = get_rotation(image, image_name, _pattern)
+    inverse = np.linalg.inv(rotation)
+    p = np.array([0,0, 1484.0586271675822])
+    local_p = np.matmul( inverse, p)
+    print("local_p ",local_p )
+
+    camera_name = image_name.split('.')[0]
+    position = globals()[camera_name]["position"]  # 1,2,3 position on the floor
+    starting_pair = globals()[camera_name]["start_pair"]
+    letter_start_coordinate_system = starting_pair[0]
+
+    # name of the point on the floor , that is our start of coordinate system
+    point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
+
+    transform_from_local_to_global = get_global_transform_per_camera(point_name, _pattern)
+    print("letter_start_coordinate_system", letter_start_coordinate_system)
+    rotation_local_to_global = rotation_matrix(letter_start_coordinate_system)
+    # print("local_camera_pos",local_camera_pos)
+    reshaped_array = np.append(local_p, 1)
+    # Reshape the modified array to shape (4, 1)
+    reshaped_local_p_pos = np.reshape(reshaped_array, (4, 1))
+
+    global_p_pos = np.matmul(transform_from_local_to_global,np.matmul(rotation_local_to_global, reshaped_local_p_pos))
+    # print("global_local_camera", global_local_camera)
+    global_p_pos = global_p_pos /global_p_pos [-1]
+    # print("global_local_camera", global_local_camera)
+    # print("global", np.squeeze(global_local_camera[:3]))
+    print("global p pos ", np.squeeze(global_p_pos [:3]))
+
+
+
+    # angles = rotation_matrix_to_euler_angles(rotation_matrix)
+    # print("angles", angles)
+
+    cam_1_pos_global = get_global_camera_position(image, image_name, _pattern)
+    print("cam_1_pos_global", cam_1_pos_global )
+
+    direction_vector = cam_1_pos_global - global_p_pos
+    print("direction_vector", direction_vector)
+
+    x,y,z = direction_vector
+    x_angle = np.arctan2(np.sqrt(y*y+z*z), x)*180/pi
+    y_angle = np.arctan2(np.sqrt(x*x+z*z), y)*180/pi
+    z_angle = np.arctan2(np.sqrt(x * x + y * y), z)*180/pi
+    print("x_angle", x_angle)
+    print("y_angle", y_angle)
+    print("z_angle", z_angle)
+    # image_name = 'cam2.jpg'
+    # image = images[image_name]
+    # cam_pos_2 = get_global_camera_position(image, image_name, _pattern)
+    # print("2", cam_pos_2)
+
     # global_coord_to_pixel(image, image_name, _pattern)
 
     # for key in images:
     #     image_name = key # for example : cam6.jpg
     #     image = images[image_name]
     #     x, y, z = get_global_camera_position(image,image_name, _pattern)
-    
-    pixel_coord_camN_to_global_coord(image,image_name, _pattern)
+
+    # pixel_coord_camN_to_global_coord(image,image_name, _pattern)
     # plt.show(block=True)
 
 
