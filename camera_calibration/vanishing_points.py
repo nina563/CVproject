@@ -126,6 +126,7 @@ def intrinsic_parameters(img, vp_u, vp_v):
     vp_v = np.array(vp_v)
     p = np.array(p_point)
     f = focal_length_calc(vp_u+p, vp_v+p, p)
+    print("f ", f)
     K = np.array([[scale_factor_u * f, skew, u0],
                   [0, scale_factor_v * f, v0],
                   [0, 0, 1]])
@@ -142,11 +143,10 @@ def rotation(vp_u, vp_v, f):
     v_rc = np.array([vp_v[0], vp_v[1], f]) / len_v_rc
 
     w_rc = np.cross(u_rc, v_rc)
-
+    new = np.cross(np.array([0.6918,0.4688, -0.5493 ]), np.array([0.7215, -0.4179, 0.5520]))
     u_rc = u_rc.reshape(3, 1)
     v_rc = v_rc.reshape(3, 1)
     w_rc = w_rc.reshape(3, 1)
-
     # rotation from world to camera
     rotation = np.hstack((u_rc, v_rc, w_rc))
     return rotation
@@ -282,7 +282,7 @@ def get_rotation(test_image, image_name, pattern):
     vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
     f = focal_length_calc(vp_u, vp_v, [0,0] )
-    print("focal length", f)
+    print("f",f)
     rotation_matrix = rotation(vp_u, vp_v, f)
     return rotation_matrix
 
