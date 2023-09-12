@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 from load import load_images
-from scene_calibration import floor_map, rotation_matrix, get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_global_transform_per_camera, get_global_extrisic_matrix
+from scene_calibration import floor_map, rotation_matrix, get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_local_to_global_transform, get_global_extrisic_matrix
 import matplotlib.pyplot as plt
 from camera_calibration.vanishing_points import get_distance_to_calibration_pattern, get_intrinsic_matrix
 
@@ -84,7 +84,7 @@ def visual_test(image, image_name, pattern):
 
     #name of the point on the floor , that is our start of coordinate system
     point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
-    print(point_name)
+    print("letter_start_coordinate_system", letter_start_coordinate_system)
     coordinate_system_start = get_coordinates_from_point_names(point_name, pattern)
 
 
@@ -92,11 +92,8 @@ def visual_test(image, image_name, pattern):
     x = [point[0] for point in array_of_floor_points]
     y = [point[1] for point in array_of_floor_points]
 
-    x_cam,y_cam,z_cam = get_distance_to_calibration_pattern(image,image_name, pattern)
-    print("x_cam,y_cam,z_cam", x_cam,y_cam,z_cam)
     plt.scatter(x, y, c = 'b')
     plt.scatter(coordinate_system_start[0], coordinate_system_start[1], c = 'r')
-    plt.scatter((x_cam+coordinate_system_start[0]),(y_cam+coordinate_system_start[1]), c ='g')
 
     # Set labels and title
     plt.xlabel('X')
@@ -109,18 +106,82 @@ def visual_test(image, image_name, pattern):
     # Show the plot
     plt.show()
 
-    extrinsic = get_extrinsic_matrix_per_camera(image,image_name, pattern)
-    print("Local extrinsic matrix\n",extrinsic )
 
-    transform_from_local_to_global = get_global_transform_per_camera(point_name, pattern)
-    print("Transformation from local to global \n", transform_from_local_to_global)
-    rotation_local_to_global  = rotation_matrix(letter_start_coordinate_system)
-    print("Rotation from local to global \n", rotation_local_to_global)
+def test_mapping(images, pattern):
 
-    global_extrinsic_matrix = np.matmul(transform_from_local_to_global,np.matmul(rotation_local_to_global, extrinsic))
-    print("extrinsic_matrix of camera", camera_name, "-\n", global_extrinsic_matrix, "\n" )
+    array_of_floor_points = floor_map(pattern)
+    position_3 = array_of_floor_points[:4]
+    position_2 = array_of_floor_points[4:8]
+    position_1 = array_of_floor_points[8:12]
+
+    x_pattern_size, y_pattern_size = _pattern["size"]
+    x_blank = _pattern["x_blank"]
+    y_blank = _pattern["y_blank"]
+    pattern_actual_x = x_pattern_size - 2 * x_blank
+    pattern_actual_y = y_pattern_size - 2 * y_blank
+
+    print("cam1")
+    A = np.array([0, 0, 0, 1])
+    B = np.array([0,pattern_actual_x, 0,1])
+    C = np.array([pattern_actual_y,pattern_actual_x, 0,1])
+    D = np.array([pattern_actual_y,0, 0,1])
+    rotation_local_to_global, transform_from_local_to_global = get_local_to_global_transform("cam1.jpg", pattern)
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, B))[:3] == position_3[0])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, C))[:3] == position_3[1])
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, D))[:3] == position_3[2])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, A))[:3] == position_3[3])
+
+    print("cam2")
+    B = np.array([0,pattern_actual_y, 0,1])
+    C = np.array([pattern_actual_x,pattern_actual_y, 0,1])
+    D = np.array([pattern_actual_x,0, 0,1])
+    rotation_local_to_global, transform_from_local_to_global = get_local_to_global_transform("cam2.jpg", pattern)
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, A))[:3] == position_3[0])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, B))[:3] == position_3[1])
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, C))[:3] == position_3[2])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global,D))[:3] == position_3[3])
+
+    print("cam3")
+    B = np.array([0,pattern_actual_y, 0,1])
+    C = np.array([pattern_actual_x,pattern_actual_y, 0,1])
+    D = np.array([pattern_actual_x,0, 0,1])
+    rotation_local_to_global, transform_from_local_to_global = get_local_to_global_transform("cam3.jpg", pattern)
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, A))[:3] == position_2[0])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, B))[:3] == position_2[1])
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, C))[:3] == position_2[2])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global,D))[:3] == position_2[3])
 
 
+    print("cam4")
+    B = np.array([0,pattern_actual_x, 0,1])
+    C = np.array([pattern_actual_y,pattern_actual_x, 0,1])
+    D = np.array([pattern_actual_y,0, 0,1])
+    rotation_local_to_global, transform_from_local_to_global = get_local_to_global_transform("cam4.jpg", pattern)
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, D))[:3] == position_1[0])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, A))[:3] == position_1[1])
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, B))[:3] == position_1[2])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global,C))[:3] == position_1[3])
+
+    print("cam5")
+    B = np.array([0,pattern_actual_y, 0,1])
+    C = np.array([pattern_actual_x,pattern_actual_y, 0,1])
+    D = np.array([pattern_actual_x,0, 0,1])
+    rotation_local_to_global, transform_from_local_to_global = get_local_to_global_transform("cam5.jpg", pattern)
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, C))[:3] == position_1[0])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, D))[:3] == position_1[1])
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, A))[:3] == position_1[2])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global,B))[:3] == position_1[3])
+
+    print("cam6")
+    A = np.array([0, 0, 0, 1])
+    B = np.array([0,pattern_actual_x, 0,1])
+    C = np.array([pattern_actual_y,pattern_actual_x, 0,1])
+    D = np.array([pattern_actual_y,0, 0,1])
+    rotation_local_to_global, transform_from_local_to_global = get_local_to_global_transform("cam6.jpg", pattern)
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, B))[:3] == position_2[0])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, C))[:3] == position_2[1])
+    print( np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, D))[:3] == position_2[2])
+    print(np.matmul(transform_from_local_to_global, np.matmul(rotation_local_to_global, A))[:3] == position_2[3])
 
 def save_matrix(images, _pattern):
 
@@ -139,12 +200,13 @@ if __name__ == '__main__':
     matplotlib.use('QtCairo')
     images = load_images()
     _pattern = checkered_board
-    save_matrix(images, _pattern)
+    # test_mapping(images, _pattern)
+    # save_matrix(images, _pattern)
     # map_test(_pattern)
     #
-    # for key in images:
-    #     image_name = key # for example : cam6.jpg
-    #     image = images[image_name]
-    #     visual_test(image, image_name, _pattern)
+    for key in images:
+        image_name = key # for example : cam6.jpg
+        image = images[image_name]
+        visual_test(image, image_name, _pattern)
 
     plt.show(block=True)
