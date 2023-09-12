@@ -4,7 +4,7 @@ from camera_calibration.vanishing_points import get_distance_to_calibration_patt
 from load import load_images
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 
-
+#get coordinates of 4 corners for each pattern on the floor
 def floor_map(_pattern):
     x_pattern_size, y_pattern_size = _pattern["size"] 
     x_blank = _pattern["x_blank"]
@@ -49,6 +49,8 @@ def floor_map(_pattern):
                                 D_pattern_coordinate_1_position])
     return array_of_points
 
+#based on the name of the pattern retrive location of the start of the coordinates
+# system that is placed on the corner of the pattern
 def get_coordinates_from_point_names(point_name,_pattern):
     array_points_name = np.array([
         "A_pattern_coordinate_3_position",
@@ -74,7 +76,7 @@ def get_coordinates_from_point_names(point_name,_pattern):
 
     return coordinate_system_start
 
-
+#get local entrinsic matrix per camera
 def get_extrinsic_matrix_per_camera(img,image_name, pattern):
     rotation_matrix = get_rotation(img, image_name,pattern)
     translation_vector = np.array(get_distance_to_calibration_pattern(img,image_name, pattern)).reshape((3,))
@@ -85,6 +87,7 @@ def get_extrinsic_matrix_per_camera(img,image_name, pattern):
     extrinsic_matrix[:3,3] = translation_vector
     return extrinsic_matrix
 
+# get local rotation of the camera - extrinsic parameter of the camera
 def local_rotation(angle):
     tol = 1e-8
     cos_val = np.cos(angle)
@@ -101,7 +104,7 @@ def local_rotation(angle):
                          [0              , 0               , 1]])
     return rotation
 
-
+# rotation from local coordinates system ( corner of the pattern) to global coordinate system ( [0,0,0] point on the floor)
 def rotation_matrix(start_coordinate_system):
     rotation_matrix = np.identity(4)
     if start_coordinate_system == "A":
@@ -116,7 +119,7 @@ def rotation_matrix(start_coordinate_system):
     return rotation_matrix
 
 
-
+# translation from local coordinates system ( corner of the pattern) to global coordinate system ( [0,0,0] point on the floor)
 def get_global_transform_per_camera(point_name, pattern):
     translation_matrix = np.identity(4)
     coordinate_system_start = get_coordinates_from_point_names(point_name, pattern)
@@ -124,6 +127,7 @@ def get_global_transform_per_camera(point_name, pattern):
 
     return translation_matrix
 
+#return local to global transformation matrices per camera
 def get_local_to_global_transform(image_name,pattern):
 
     camera_name = image_name.split('.')[0]
@@ -140,7 +144,7 @@ def get_local_to_global_transform(image_name,pattern):
     rotation_local_to_global  = rotation_matrix(letter_start_coordinate_system)
     return rotation_local_to_global, transform_from_local_to_global
 
-
+# local to global transform * extrinsic matrix = global extrinsic
 def get_global_extrisic_matrix(img, image_name,pattern):
     extrinsic = get_extrinsic_matrix_per_camera(img,image_name, pattern)
 
@@ -151,8 +155,6 @@ def get_global_extrisic_matrix(img, image_name,pattern):
 
     #name of the point on the floor , that is our start of coordinate system
     point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
-    # print("start of the coordinate system", point_name)
-
 
     transform_from_local_to_global = get_global_transform_per_camera(point_name, pattern)
     rotation_local_to_global  = rotation_matrix(letter_start_coordinate_system)
@@ -161,6 +163,7 @@ def get_global_extrisic_matrix(img, image_name,pattern):
     # print("extrinsic_matrix of camera", camera_name, "-\n", global_extrinsic_matrix, "\n" )
     return global_extrinsic_matrix
 
+#return all 6 global extrinsic matrices
 def global_extrisic_matrix_for_all():
     images = load_images()
     _pattern = checkered_board
@@ -170,10 +173,9 @@ def global_extrisic_matrix_for_all():
         get_global_extrisic_matrix(image, image_name,_pattern )
 
 
-
 if __name__ == '__main__':
     images = load_images()
     _pattern = checkered_board
-
-    global_extrinsic_matrix = get_global_extrisic_matrix(images["cam2.jpg"],"cam2.jpg", _pattern)
-    global_extrisic_matrix_for_all()
+    array = floor_map(_pattern)
+    # global_extrinsic_matrix = get_global_extrisic_matrix(images["cam2.jpg"],"cam2.jpg", _pattern)
+    # global_extrisic_matrix_for_all()
