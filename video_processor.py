@@ -2,7 +2,7 @@ import os
 
 import cv2
 
-
+#get frames from videos
 def extractImages(pathIn):
     parent_dir = os.path.dirname(pathIn)
     folder = 'frames'  # create a folder to store extracted images
