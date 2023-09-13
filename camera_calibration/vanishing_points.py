@@ -1,12 +1,13 @@
-import math
+# file contain functions for computing the camera position and intrinsic matrix
 
+import math
 import cv2
 import numpy as np
 from numpy.linalg import norm
 from sklearn.linear_model import RANSACRegressor
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 
-
+# detect corners of the pattern
 def pattern_corner_detect(img, pattern_size):
     gray_scale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, corners = cv2.findChessboardCorners(gray_scale, pattern_size, None)
@@ -18,7 +19,7 @@ def pattern_corner_detect(img, pattern_size):
     reshaped_corners = corners.reshape(-1, 2)
     return reshaped_corners
 
-
+# arrange croners into hor and vert lines
 def all_lines_detect(pattern_size, corners):
     x_size, y_size = pattern_size
     horizontal = []
@@ -34,7 +35,7 @@ def all_lines_detect(pattern_size, corners):
 
     return horizontal, vertical
 
-
+#coordinates of the parameter lines of the pattern are arranged into arrays
 def parameter_lines_detect(img, pattern_size, corners):
     x, y = pattern_size
     first_horizontal = corners[0:x].copy()
@@ -60,7 +61,7 @@ def parameter_lines_detect(img, pattern_size, corners):
         cv2.circle(img, (int(x), int(y)), 5, (255, 0, 0), 2)
     return first_horizontal, second_horizontal, first_vertical, second_vertical
 
-
+# fit lines into points using ransac
 def line_fit_ransac(img, line):
     height, width, _ = img.shape
     X = line[:, 0].reshape(-1, 1)
@@ -76,7 +77,7 @@ def line_fit_ransac(img, line):
     parameters = np.array(np.squeeze(np.array(parameters)))
     return parameters
 
-
+#detect point of intersection of 2 2D lines
 def intersection_2Dpoints_detect(line_1_parameter, line_2_parameter):
     slope1, intercept1 = line_1_parameter
     slope2, intercept2 = line_2_parameter
@@ -85,15 +86,15 @@ def intersection_2Dpoints_detect(line_1_parameter, line_2_parameter):
     points = np.array((x_intersect, y_intersect))
     return points
 
-
-def distance(point1, point2):  # Calculates the distance between two points in a 2D coordinate system.
+# Calculates the distance between two points in a 2D coordinate system
+def distance(point1, point2):
     x1 = point1[0]
     y1 = point1[1]
     x2 = point2[0]
     y2 = point2[1]
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-
+#calculate focal length out of 2 vanishing points
 def focal_length_calc(vp_u, vp_v, p_point): # p - is not (0,0)
     ap = p_point - vp_v
     ab = vp_u - vp_v
@@ -102,18 +103,14 @@ def focal_length_calc(vp_u, vp_v, p_point): # p - is not (0,0)
     focal_length = math.sqrt(pow(OcVi_len, 2) - pow(distance(p_point, p_uv), 2))
     return focal_length
 
-
-# def focal_length(vp_u, vp_v, p=(0, 0)):
-#     return np.sqrt((-(vp_u - p)).dot(vp_v - p))
-
-
+#get coorsinate of the central point of the image
 def principal_point_coordinates(img):
     height, width, channels = img.shape
     center_x = int(width / 2)
     center_y = int(height / 2)
     return [center_x, center_y]
 
-
+# arranging intrinsic parameters into matrix
 def intrinsic_parameters(img, vp_u, vp_v):
     p_point = principal_point_coordinates(img)  # u0, v0 for the intrinsic matrix
     u0 = p_point[0]
@@ -126,16 +123,16 @@ def intrinsic_parameters(img, vp_u, vp_v):
     vp_v = np.array(vp_v)
     p = np.array(p_point)
     f = focal_length_calc(vp_u+p, vp_v+p, p)
-    print("f ", f)
     K = np.array([[scale_factor_u * f, skew, u0],
                   [0, scale_factor_v * f, v0],
                   [0, 0, 1]])
     return K
 
-def pixel_to_mm(pixel_coordinate):
-    mm_coordinate= np.array([pixel_coordinate[0]*1.8*2.54/ 3.072, pixel_coordinate[1]*1* 2.54/ 2.048])
-    return mm_coordinate
+# def pixel_to_mm(pixel_coordinate):
+#     mm_coordinate= np.array([pixel_coordinate[0]*1.8*2.54/ 3.072, pixel_coordinate[1]*1* 2.54/ 2.048])
+#     return mm_coordinate
 
+#calculate local rotation of the camera
 def rotation(vp_u, vp_v, f):
     len_u_rc = math.sqrt(vp_u[0] ** 2 + vp_u[1] ** 2 + f ** 2)
     len_v_rc = math.sqrt(vp_v[0] ** 2 + vp_v[1] ** 2 + f ** 2)
@@ -143,7 +140,7 @@ def rotation(vp_u, vp_v, f):
     v_rc = np.array([vp_v[0], vp_v[1], f]) / len_v_rc
 
     w_rc = np.cross(u_rc, v_rc)
-    new = np.cross(np.array([0.6918,0.4688, -0.5493 ]), np.array([0.7215, -0.4179, 0.5520]))
+    # new = np.cross(np.array([0.6918,0.4688, -0.5493 ]), np.array([0.7215, -0.4179, 0.5520]))
     u_rc = u_rc.reshape(3, 1)
     v_rc = v_rc.reshape(3, 1)
     w_rc = w_rc.reshape(3, 1)
@@ -151,7 +148,7 @@ def rotation(vp_u, vp_v, f):
     rotation = np.hstack((u_rc, v_rc, w_rc))
     return rotation
 
-
+# calculate vector from camera center to corner of the pattern in global coordonate system
 def translation(vp_u, f, principal_point, square_size, A_point, D_point, camera_name):
     if camera_name == "cam1" or camera_name == "cam4" or camera_name == "cam6":
         K_pos = 2
@@ -173,7 +170,7 @@ def translation(vp_u, f, principal_point, square_size, A_point, D_point, camera_
 
     return OA_ro  # in mm
 
-
+#detect point of intersection of 2 3D lines
 def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
     # source https://math.stackexchange.com/questions/2213165/find-shortest-distance-between-lines-in-3d
     p1 = np.array(a_rc)
@@ -250,7 +247,6 @@ def get_distance_to_calibration_pattern(test_image,image_name, pattern):
     elif first == "D":
         start_coordinate_system = D_point_im
         second_important_point = C_point_im
-
     # we have already shifted everything so that 0,0 is in P0
     OA_ro = translation(vp_u, f, (0, 0), pattern["square_size"],
                         start_coordinate_system,
@@ -282,12 +278,12 @@ def get_rotation(test_image, image_name, pattern):
     vp_u = intersection_2Dpoints_detect(fitted_lines_parameters[u_pair[0]], fitted_lines_parameters[u_pair[1]])
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
     f = focal_length_calc(vp_u, vp_v, [0,0] )
-    print("f",f)
     rotation_matrix = rotation(vp_u, vp_v, f)
     return rotation_matrix
 
 
 def get_intrinsic_matrix(test_image, image_name, pattern):
+    """Given an image containing a checkerd pattern, it returns the intrinsic matrix of the camera"""
     p0 = principal_point_coordinates(test_image)
     corners = pattern_corner_detect(test_image, pattern["dimension"]) - p0
     perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)

@@ -8,7 +8,7 @@ from camera_calibration.vanishing_points import pattern_corner_detect, all_lines
     translation, get_distance_to_calibration_pattern, get_intrinsic_matrix, focal_length_calc
 from load import load_images
 
-
+""" """
 def visual_test(test_image,image_name, pattern):
     # Detect corners
     p0 = principal_point_coordinates(test_image)
@@ -45,7 +45,8 @@ def visual_test(test_image,image_name, pattern):
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
 
     draw_image_with_corners(corners, test_image, "Vanishing Points", p0)
-    plt.scatter(*np.array([vp_u]).T, marker="*")
+    plt.scatter(*np.array([vp_u]).T, marker="*", c="b")
+    plt.scatter(*np.array([vp_v]).T, marker="*", c="b")
     # compare_lines_with_parameters(fitted_lines_parameters, perimeter_lines)
     plt.gca().set_ylim(+p0[1], -p0[1])
 
@@ -54,6 +55,10 @@ def visual_test(test_image,image_name, pattern):
     B_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[3])
     C_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[2])
     D_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[2])
+    plt.scatter(*np.array([A_point_im]).T, c="r")
+    plt.scatter(*np.array([B_point_im]).T, c="r")
+    plt.scatter(*np.array([C_point_im]).T, c="r")
+    plt.scatter(*np.array([D_point_im]).T, c="r")
 
 
 # choosing the start coordinates for the calculations
@@ -71,9 +76,8 @@ def visual_test(test_image,image_name, pattern):
         second_important_point = C_point_im
 
 
-    plt.scatter(*np.array([start_coordinate_system, second_important_point]).T, marker="*", c="r")
+    # plt.scatter(*np.array([start_coordinate_system, second_important_point]).T, marker="*", c="r")
     f = focal_length_calc(vp_u, vp_v, [0, 0])
-    print(f"Focal length (extrinsic ): {f} pixels")
 
     rotation_matrix = rotation(vp_u, vp_v, f)
 
@@ -132,16 +136,6 @@ if __name__ == '__main__':
     for key in images:
         image_name = key # for example : cam6.jpg
         image = images[image_name]
+        visual_test(image,image_name, _pattern)
 
-
-
-    #     x, y, z = get_distance_to_calibration_pattern(image,image_name, _pattern)
-    #     vt_oa_ro = visual_test(image, image_name, _pattern)
-    #     assert ((vt_oa_ro - np.linalg.norm([x, y, z])) < 1e-12)
-    #
-    #     print(f"Distance to the wall: {y/1000:0.2f}m, "
-    #           f"distance from the focal axis: {x/1000:0.2f}m, "
-    #           f"camera installation height: {z/1000:0.2f}m")
-    #     print("\n")
-    #
-    # plt.show(block=True)
+    plt.show(block=True)
