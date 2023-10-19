@@ -193,7 +193,6 @@ def intersection_3Dpoints_detect(a_rc, p_new, o_rc, k_rc):
         t2 = np.cross(e1, n).dot(p2 - p1) / n.dot(n)
 
         intersection_point = p1 + t1 * e1
-        #print("The two lines intersect at point", intersection_point)
         assert np.allclose(intersection_point,
                                 p2 + t2 * e2, rtol=0, atol=1e-06), f"Closest point differs: {intersection_point} != {p2 + t2 * e2}"
     else:
@@ -228,7 +227,6 @@ def get_distance_to_calibration_pattern(test_image,image_name, pattern):
     vp_v = intersection_2Dpoints_detect(fitted_lines_parameters[v_pair[0]], fitted_lines_parameters[v_pair[1]])
 
     f = focal_length_calc(vp_u, vp_v, [0,0])
-
     A_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[0], fitted_lines_parameters[3])
     B_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[3])
     C_point_im = intersection_2Dpoints_detect(fitted_lines_parameters[1], fitted_lines_parameters[2])
