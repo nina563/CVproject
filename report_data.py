@@ -1,3 +1,4 @@
+import math
 import os
 import json
 from scipy.spatial.transform import Rotation
@@ -83,14 +84,16 @@ def compare_rotation():
             nina_std_angles= np.array(nina_data[camera]["std_angles"])
             franz_angles = np.array(franz_data[camera]["euler_angles"])
             abs_difference = np.abs(franz_angles - nina_av_angles)
-            epsilon = 1e-6
-            relative_difference = (franz_angles - nina_av_angles) / (nina_av_angles + epsilon)
-
-            z_score =(franz_angles - nina_av_angles)/nina_std_angles
+            # epsilon = 1e-6
+            # relative_difference = (franz_angles - nina_av_angles) / (nina_av_angles + epsilon)
+            #
+            # z_score =(franz_angles - nina_av_angles)/nina_std_angles
             print(camera)
-            print("abs_difference", [round(coord, 2) for coord in abs_difference])
-            print("relative_difference", relative_difference)
-            print("z_score", z_score, "\n")
+            dif = franz_angles - nina_av_angles
+
+            # print("abs_difference", [round(coord, 2) for coord in abs_difference])
+            # print("relative_difference", relative_difference)
+            # print("z_score", z_score, "\n")
             print("-" * 20)  # Separator between camera data
 
 
@@ -126,16 +129,14 @@ def compare_coordinates():
         # Accessing individual items within the dictionary
         for camera in nina_data:
             nina_av_positions = np.array(nina_data[camera]["av_positions"])
-            nina_std_positions= np.array(nina_data[camera]["std_positions"])
-            franz_positions = np.array(franz_data[camera]["coordinates"]).flatten()
-            abs_difference = np.abs(franz_positions - nina_av_positions/1000)
-            relative_difference = (franz_positions - nina_av_positions/1000)/nina_av_positions
-
-            z_score =(franz_positions - nina_av_positions/1000)/nina_std_positions
+            franz_positions = np.array(franz_data[camera]["coordinates"]).flatten()*1000
+            abs_difference = np.abs(franz_positions - nina_av_positions)
+            dif= franz_positions[:2] - nina_av_positions[:2]
+            magnitude = math.sqrt(dif[0]**2 + dif[1]**2)
             print("camera", camera)
-            print("abs_difference", [round(coord, 2) for coord in abs_difference])
-            print("relative_difference", relative_difference)
-            print("z_score", z_score, "\n")
+            print("magnitude", round(magnitude, 2) )
+
+            print("abs_difference round", [round(coord, 2) for coord in abs_difference], "\n")
 
 def plot_coordinates():
 
@@ -172,7 +173,7 @@ def plot_coordinates():
         # Adjust figure size and margins
         fig.set_size_inches(10,10)  # Adjust the figure size as needed
 
-        plt.savefig('plot.jpg', format='jpg')
+        plt.savefig('coord_plot', dpi=300, bbox_inches='tight')
         plt.show()
 
 
@@ -223,7 +224,11 @@ def image_for_report_1():
     plt.scatter(*np.array([B_point_im+p0]).T, c="r", s = 20)
     plt.scatter(*np.array([C_point_im+p0]).T, c="r", s = 20)
     plt.scatter(*np.array([D_point_im+p0]).T, c="r", s = 20)
+    # Save the plot with specified DPI for high quality
+    plt.savefig('report_image_1', dpi=300, bbox_inches='tight')
+
     plt.show(block=True)
+
 
 def get_round():
     with open('nina_data/camera_av_parameters.json', 'r') as file:
@@ -232,15 +237,101 @@ def get_round():
         for camera in nina_data:
             nina_av_positions = np.array(nina_data[camera]["av_positions"])
             std = np.array(nina_data[camera]["std_positions"])
+            nina_av_angles = np.array(nina_data[camera]["av_angles"])
+            std_angle = np.array(nina_data[camera]["std_angles"])
             print(camera)
             rounded_positions = [round(coord, 2) for coord in nina_av_positions]
+            rounded_std = [round(coord, 2) for coord in std]
+            rounded_angles = [round(coord, 2) for coord in nina_av_angles]
+            rounded_std_angles = [round(coord, 2) for coord in std_angle]
+
+            print("angle: ", rounded_angles)
+            print("std", rounded_std_angles)
+
             print("coord: ", rounded_positions)
-            print("std", std)
+            print("std", rounded_std)
+
             print("-" * 20)  # Separator between camera data
+
+def get_relative_angle():
+    combined_file_path = "franz_data/combined_Franz_data.json"
+    with open(combined_file_path, "r") as combined_file:
+        franz_data = json.load(combined_file)
+
+    combined_file_path = "nina_data/camera_av_parameters.json"
+    with open(combined_file_path, "r") as combined_file:
+        nina_data = json.load(combined_file)
+    for camera_name in nina_data:
+        print(camera_name)
+        rotation_matrix = franz_data[camera_name]['rotation_matrix']
+        reference_view_vector = np.dot(np.transpose(rotation_matrix), np.array([0, 0, 1]))
+        reference_view_vector = reference_view_vector / np.linalg.norm(reference_view_vector)
+
+        rotation_matrix = nina_data[camera_name]['extrinsic_matrix']
+        vp_view_vector = np.dot(np.transpose(rotation_matrix), np.array([0, 0, 1]))
+        vp_view_vector[1]*=-1
+
+        dot_product = np.dot(reference_view_vector, vp_view_vector)
+        magnitude_A = np.linalg.norm(reference_view_vector)
+        magnitude_B = np.linalg.norm(vp_view_vector)
+        cosine_theta = dot_product / (magnitude_A * magnitude_B)
+        angle_radians = np.arccos(cosine_theta)
+        angle_degrees = np.degrees(angle_radians)
+        print(round(angle_degrees, 2), "\n")
+    print("\n")
+
+def get_relative_angle_2():
+    combined_file_path = "franz_data/combined_Franz_data.json"
+    with open(combined_file_path, "r") as combined_file:
+        franz_data = json.load(combined_file)
+
+    combined_file_path = "nina_data/camera_av_parameters.json"
+    with open(combined_file_path, "r") as combined_file:
+        nina_data = json.load(combined_file)
+    for camera_name in nina_data:
+        print(camera_name)
+        rotation_matrix = franz_data[camera_name]['rotation_matrix']
+        reference_view_vector = np.dot(np.transpose(rotation_matrix), np.array([0, 0, 1]))
+        reference_view_vector = reference_view_vector / np.linalg.norm(reference_view_vector)
+
+        nina_positions = np.array(nina_data[camera_name]["av_positions"])
+        franz_positions = np.array(franz_data[camera_name]["coordinates"]).flatten() * 1000
+        vector_franz_nina = nina_positions - franz_positions
+        vector_fromfranztonina = vector_franz_nina / np.linalg.norm(vector_franz_nina)
+
+        dot_product = np.dot(reference_view_vector, vector_fromfranztonina)
+        magnitude_A = np.linalg.norm(reference_view_vector)
+        magnitude_B = np.linalg.norm(vector_fromfranztonina)
+        cosine_theta = dot_product / (magnitude_A * magnitude_B)
+        angle_radians = np.arccos(cosine_theta)
+        angle_degrees = np.degrees(angle_radians)
+        print(round(angle_degrees, 2), "\n")
+
+
+
+
+# def get_franz_view_dir():
+#     combined_file_path = "franz_data/combined_Franz_data.json"
+#     with open(combined_file_path, "r") as combined_file:
+#         franz_data = json.load(combined_file)
+#     print("New method ")
+#     for camera_name in franz_data:
+#         print(camera_name)
+#         x, y, z, w = franz_data[camera_name]['rotation']
+#         view_dir_x =  2 * (x * z + w * y)
+#         view_dir_y = 2 * (y * z - w * x)
+#         view_dir_z = 1 - 2 * (x * x + y * y)
+#         view_dir_vector = np.array([view_dir_x, view_dir_y,view_dir_z ])
+#         view_dir_vector = view_dir_vector / np.linalg.norm(view_dir_vector)
+#         print(view_dir_vector)
+#     print("\n")
+
+
+
+
+
 
 
 if __name__ == '__main__':
-    # compare_rotation()
-    # compare_coordinates()
-    # plot_coordinates()
-    plot_coordinates()
+    get_relative_angle_2()
+
