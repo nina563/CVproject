@@ -1,13 +1,11 @@
-from scene_calibration import floor_map, get_global_transform_per_camera, rotation_matrix,\
-    get_coordinates_from_point_names, get_extrinsic_matrix_per_camera, get_local_to_global_transform, get_rotation
+from scene_calibration import floor_map, get_global_transform_per_camera, rotation_matrix,get_rotation, get_global_extrisic_matrix
 from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 
-from camera_calibration.vanishing_points import get_distance_to_calibration_pattern, get_intrinsic_matrix, pattern_corner_detect, principal_point_coordinates
+from camera_calibration.vanishing_points import get_distance_to_calibration_pattern
 import numpy as np
 from load import load_images
 from math import asin, pi, atan2, cos, copysign
 import cv2
-from pathlib import Path
 import pickle
 import matplotlib.pyplot as plt
 import json
@@ -66,8 +64,6 @@ def get_global_rotation(test_image,image_name, pattern):
     z_rot = -np.arctan2(x, y) * 180 / pi
 
     rotation = np.array([x_rot, y_rot, z_rot ])
-    print(camera_name)
-    print(rotation, "\n")
     return rotation
 
 
@@ -85,6 +81,7 @@ def get_cam_parameters_dict(pattern):
     filelist = list(Path('.').glob('**/*.mp4'))
     camera_position_dict = {}
     camera_rotation_dict = {}
+    extrinsic_matrix_dict = {}
     for i in filelist:
         filename = i.name
         camera_name = filename.split('.')[0]  # Split the filename by '.' and get the first element
@@ -109,34 +106,47 @@ def get_cam_parameters_dict(pattern):
             image_name = filename
             camera_position = get_global_camera_position(frame, image_name, pattern)
             camera_rotation = get_global_rotation(frame,image_name, pattern)
+            extrinsic_matrix = get_global_extrisic_matrix(frame, image_name, pattern)
             # Append coordinates for the camera multiple times
-            if camera_name in camera_position_dict:
-                # Camera already exists in the dictionary
-                camera_position_dict[camera_name].append(camera_position)
-            else:
-                # Camera does not exist in the dictionary
-                camera_position_dict[camera_name] = [camera_position]
+            # if camera_name in camera_position_dict:
+            #     # Camera already exists in the dictionary
+            #     camera_position_dict[camera_name].append(camera_position)
+            # else:
+            #     # Camera does not exist in the dictionary
+            #     camera_position_dict[camera_name] = [camera_position]
+            #
+            # if camera_name in camera_rotation_dict:
+            #     # Camera already exists in the dictionary
+            #     camera_rotation_dict[camera_name].append(camera_rotation)
+            # else:
+            #     # Camera does not exist in the dictionary
+            #     camera_rotation_dict[camera_name] = [camera_rotation]
 
-            if camera_name in camera_rotation_dict:
+            if camera_name in extrinsic_matrix_dict:
                 # Camera already exists in the dictionary
-                camera_rotation_dict[camera_name].append(camera_rotation)
+                extrinsic_matrix_dict[camera_name].append(extrinsic_matrix)
             else:
                 # Camera does not exist in the dictionary
-                camera_rotation_dict[camera_name] = [camera_rotation]
+                extrinsic_matrix_dict[camera_name] = [extrinsic_matrix]
 
             # next frame
             index += 1
 
     file_path_pos = "nina_data/camera_pos_dict.pkl"
     file_path_rot = "nina_data/camera_rotation_dict.pkl"
+    file_path_ext = "nina_data/extrinsic_matrix_dict.pkl"
     # Open the file in write mode
-    with open(file_path_pos, 'wb') as file:
-        # Serialize and save the dictionary using pickle
-        pickle.dump(camera_position_dict, file)
+    # with open(file_path_pos, 'wb') as file:
+    #     # Serialize and save the dictionary using pickle
+    #     pickle.dump(camera_position_dict, file)
+    #
+    # with open(file_path_rot, 'wb') as file:
+    #     # Serialize and save the dictionary using pickle
+    #     pickle.dump(camera_rotation_dict, file)
 
-    with open(file_path_rot, 'wb') as file:
+    with open(file_path_ext, 'wb') as file:
         # Serialize and save the dictionary using pickle
-        pickle.dump(camera_rotation_dict, file)
+        pickle.dump(extrinsic_matrix_dict, file)
 
 def get_av_cam_parameters():
 
@@ -173,6 +183,17 @@ def get_av_cam_parameters():
                 camera_av_parameters[camera_name] = {}
             camera_av_parameters[camera_name]['av_angles'] = av_angles.tolist()
             camera_av_parameters[camera_name]['std_angles'] = std_angles.tolist()
+
+
+    with open('nina_data/extrinsic_matrix_dict.pkl', 'rb') as file:
+        extrinsic_matrix_dict= pickle.load(file)
+
+        for camera_name, extrinsic_matrix in extrinsic_matrix_dict.items():
+            average_matrix = np.mean(extrinsic_matrix, axis=0)[:3,:3]
+
+            if camera_name not in camera_av_parameters:
+                camera_av_parameters[camera_name] = {}
+            camera_av_parameters[camera_name]['extrinsic_matrix'] = average_matrix.tolist()
 
     # Sort the dictionary by camera names
     camera_av_parameters = dict(sorted(camera_av_parameters.items()))
@@ -247,6 +268,7 @@ if __name__ == '__main__':
     # image_name = 'cam1.jpg'
     # image = images[image_name]
 
+    get_av_cam_parameters()
     # get_cam_parameters_dict(_pattern)
     # get_av_cam_parameters()
     #
@@ -256,7 +278,7 @@ if __name__ == '__main__':
     #     image = images[image_name]
     #     local_angles =  get_global_rotation(image, image_name, _pattern)
 
-    plot_dict(_pattern)
+    # plot_dict(_pattern)
 
 
 

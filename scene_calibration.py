@@ -70,7 +70,6 @@ def get_coordinates_from_point_names(point_name,_pattern):
     index = np.where(array_points_name == point_name)[0]
     if index.size > 0:
         coordinate_system_start = array_of_floor_points[index[0]]
-        # print("start of the coordinate system - ", point_name,coordinate_system_start )
     else:
         print("Value not found in the array.")
 
@@ -80,7 +79,6 @@ def get_coordinates_from_point_names(point_name,_pattern):
 def get_extrinsic_matrix_per_camera(img,image_name, pattern):
     rotation_matrix = get_rotation(img, image_name,pattern)
     translation_vector = np.array(get_distance_to_calibration_pattern(img,image_name, pattern)).reshape((3,))
-    print("translation\n", translation_vector)
     translation_vector = translation_vector
     extrinsic_matrix = np.identity(4)
     extrinsic_matrix[:3,:3]= rotation_matrix
@@ -137,7 +135,6 @@ def get_local_to_global_transform(image_name,pattern):
 
     #name of the point on the floor , that is our start of coordinate system
     point_name = letter_start_coordinate_system + "_pattern_coordinate_" + str(position) + "_position"
-    # print("start of the coordinate system", point_name)
 
 
     transform_from_local_to_global = get_global_transform_per_camera(point_name, pattern)
@@ -160,7 +157,6 @@ def get_global_extrisic_matrix(img, image_name,pattern):
     rotation_local_to_global  = rotation_matrix(letter_start_coordinate_system)
 
     global_extrinsic_matrix = np.matmul(transform_from_local_to_global,np.matmul(rotation_local_to_global, extrinsic))
-    # print("extrinsic_matrix of camera", camera_name, "-\n", global_extrinsic_matrix, "\n" )
     return global_extrinsic_matrix
 
 #return all 6 global extrinsic matrices
@@ -177,5 +173,4 @@ if __name__ == '__main__':
     images = load_images()
     _pattern = checkered_board
     array = floor_map(_pattern)
-    # global_extrinsic_matrix = get_global_extrisic_matrix(images["cam2.jpg"],"cam2.jpg", _pattern)
-    # global_extrisic_matrix_for_all()
+    global_extrisic_matrix_for_all()
