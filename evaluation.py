@@ -107,21 +107,6 @@ def get_cam_parameters_dict(pattern):
             camera_position = get_global_camera_position(frame, image_name, pattern)
             camera_rotation = get_global_rotation(frame,image_name, pattern)
             extrinsic_matrix = get_global_extrisic_matrix(frame, image_name, pattern)
-            # Append coordinates for the camera multiple times
-            # if camera_name in camera_position_dict:
-            #     # Camera already exists in the dictionary
-            #     camera_position_dict[camera_name].append(camera_position)
-            # else:
-            #     # Camera does not exist in the dictionary
-            #     camera_position_dict[camera_name] = [camera_position]
-            #
-            # if camera_name in camera_rotation_dict:
-            #     # Camera already exists in the dictionary
-            #     camera_rotation_dict[camera_name].append(camera_rotation)
-            # else:
-            #     # Camera does not exist in the dictionary
-            #     camera_rotation_dict[camera_name] = [camera_rotation]
-
             if camera_name in extrinsic_matrix_dict:
                 # Camera already exists in the dictionary
                 extrinsic_matrix_dict[camera_name].append(extrinsic_matrix)
@@ -135,15 +120,6 @@ def get_cam_parameters_dict(pattern):
     file_path_pos = "nina_data/camera_pos_dict.pkl"
     file_path_rot = "nina_data/camera_rotation_dict.pkl"
     file_path_ext = "nina_data/extrinsic_matrix_dict.pkl"
-    # Open the file in write mode
-    # with open(file_path_pos, 'wb') as file:
-    #     # Serialize and save the dictionary using pickle
-    #     pickle.dump(camera_position_dict, file)
-    #
-    # with open(file_path_rot, 'wb') as file:
-    #     # Serialize and save the dictionary using pickle
-    #     pickle.dump(camera_rotation_dict, file)
-
     with open(file_path_ext, 'wb') as file:
         # Serialize and save the dictionary using pickle
         pickle.dump(extrinsic_matrix_dict, file)
@@ -265,20 +241,6 @@ def rotation_matrix_to_euler_angles(rotation_matrix):
 if __name__ == '__main__':
     images = load_images()
     _pattern = checkered_board
-    # image_name = 'cam1.jpg'
-    # image = images[image_name]
-
-    get_av_cam_parameters()
-    # get_cam_parameters_dict(_pattern)
-    # get_av_cam_parameters()
-    #
-    #
-    # for key in images:
-    #     image_name = key # for example : cam6.jpg
-    #     image = images[image_name]
-    #     local_angles =  get_global_rotation(image, image_name, _pattern)
-
-    # plot_dict(_pattern)
 
 
 

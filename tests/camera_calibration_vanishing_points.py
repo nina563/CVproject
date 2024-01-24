@@ -18,17 +18,17 @@ def visual_test(test_image,image_name, pattern):
     # all vertical and horizontal lines
     horizontal_lines, vertical_lines = all_lines_detect(pattern["dimension"], corners)
     horizontal_lines_parameters = [line_fit_ransac(test_image, line) for line in horizontal_lines]
-    # draw_image_with_corners(corners, test_image)
-    # compare_lines_with_parameters(corners, horizontal_lines_parameters, horizontal_lines)
+    draw_image_with_corners(corners, test_image)
+    compare_lines_with_parameters(corners, horizontal_lines_parameters, horizontal_lines)
 
     vertical_lines_parameters = [line_fit_ransac(test_image, line) for line in vertical_lines]
-    # draw_image_with_corners(corners, test_image)
-    # compare_lines_with_parameters(corners, vertical_lines_parameters, vertical_lines)
+    draw_image_with_corners(corners, test_image)
+    compare_lines_with_parameters(corners, vertical_lines_parameters, vertical_lines)
 
     perimeter_lines = parameter_lines_detect(test_image, pattern["dimension"], corners)
     fitted_lines_parameters = [line_fit_ransac(test_image, line) for line in perimeter_lines]
-    # draw_image_with_corners(corners, test_image)
-    # compare_lines_with_parameters(corners, fitted_lines_parameters, perimeter_lines)
+    draw_image_with_corners(corners, test_image)
+    compare_lines_with_parameters(corners, fitted_lines_parameters, perimeter_lines)
 
     camera_name = image_name.split('.')[0]
     starting_pair = globals()[camera_name]["start_pair"]

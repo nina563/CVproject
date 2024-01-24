@@ -1,11 +1,9 @@
 # file contain functions for computing the camera position and intrinsic matrix
-
 import math
 import cv2
 import numpy as np
 from numpy.linalg import norm
 from sklearn.linear_model import RANSACRegressor
-from callibration_patterns import checkered_board, cam1, cam2, cam3, cam4, cam5, cam6
 
 # detect corners of the pattern
 def pattern_corner_detect(img, pattern_size):
