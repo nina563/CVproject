@@ -3,7 +3,6 @@ import cv2
 
 def load_images():
     """returns a dictionary of 6 images with their file names as keys """
-    # folder_path = '/Users/nina/Desktop/Project/project_after_luis/one_image_per_camera'
     absolute_path = os.path.dirname(__file__)
     relative_path = "one_image_per_camera"
     full_path = os.path.join(absolute_path, relative_path)
