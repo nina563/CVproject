@@ -1,7 +1,8 @@
 # Camera calibration using two vanishing points
 In this project, I reproduced the [approach](https://www.researchgate.net/publication/226987370_Using_Vanishing_Points_for_Camera_Calibration_and_Coarse_3D_Reconstruction_from_A_Single_Image), 
-that utilizes two vanishing points produced by the planar calibration object. The goal is to determine the extrinsic parameters for six cameras, placed around the perimeter of a room.  
+that utilizes two vanishing points produced by the planar calibration object. The goal is to determine the extrinsic parameters for six cameras, placed around the perimeter of a room. 
 
+A report can be found explaining my findings in this repo titled project_report.pdf
 
 ### Tech used
 - [Python3](https://www.python.org)
